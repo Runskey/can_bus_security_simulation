@@ -2,6 +2,36 @@
 from random import random, sample, expovariate
 from glob_def import *
 
+class Vehicle:
+    speed = .0
+    tacho = .0
+    speed_scale = 0.06
+    brake_scale = 0.3
+    speedometer = []
+    tachometer = []
+    braking_record = []
+    def __init__(self, model="unknown", speed=0.0, tacho=0.0):
+        self.speed = speed
+        self.tacho = tacho
+        return
+    def record_gas_pedal_action(self, timestamp, value):
+        self.speed = self.speed + self.speed_scale * value
+        self.speedometer.append([timestamp, self.speed])
+    
+    def record_brake_pedal_action(self, timestamp, value):
+        speed_loss = self.brake_scale * value
+        self.speed = (self.speed-speed_loss) if (self.speed > speed_loss) else 0.0
+        self.speedometer.append([timestamp, self.speed])
+        self.braking_record.append([timestamp, value])
+
+    def get_speedometer_record(self):
+        return self.speedometer
+    def get_tachometer_record(self):
+        return self.tachometer
+    def get_braking_record(self):
+        return self.braking_record
+
+
 def get_event_timing_from_interval(start_second, stop_second, load_ratio):
     # generate event on random timing point between start_time and stop_time, in unit of ms
 
@@ -10,7 +40,7 @@ def get_event_timing_from_interval(start_second, stop_second, load_ratio):
     timing_seq = [i*1e-3 for i in sample(timing_interval, event_number)]
     return sorted(timing_seq)
 
-def constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
+def generate_constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
     event_list = []
 
     # -----------------------------------------------------
@@ -33,7 +63,7 @@ def constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
     
     return event_list
 
-def sporadic_event(start_time = .0, stop_time = 10.0):
+def generate_sporadic_event(start_time = .0, stop_time = 10.0):
     event_list = []
 
     # -----------------------------------------------------

@@ -4,6 +4,7 @@ from glob_def import CanEvent
 from scapy.layers.can import CAN
 from scapy.layers.inet import IP, UDP
 from scapy.utils import wrpcap
+import struct
 
 def write_can_packet(event_list:CanEvent):
     pkt_list = []
