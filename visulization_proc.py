@@ -96,7 +96,7 @@ def gauge(speedometer_record, labels=['LOW','MEDIUM','HIGH','VERY HIGH','EXTREME
     arrow = int(speedometer_record[-1][1]/10)
     pos = mid_points[abs(arrow - N)]
     ax.arrow(0, 0, 0.225 * np.cos(np.radians(pos)), 0.225 * np.sin(np.radians(pos)), \
-                 width=0.04, head_width=0.09, head_length=0.1, fc='k', ec='k')
+                 width=0.01, head_width=0.02, head_length=0.1, fc='k', ec='k')
     
     ax.add_patch(Circle((0, 0), radius=0.02, facecolor='k'))
     ax.add_patch(Circle((0, 0), radius=0.01, facecolor='w', zorder=11))
@@ -115,4 +115,3 @@ def gauge(speedometer_record, labels=['LOW','MEDIUM','HIGH','VERY HIGH','EXTREME
 
 
 # gauge(labels=['La Nina','Alert','Watch','Neutral','Watch','Alert','El Nino'], colors='RdBu', arrow=3, title='Speedometer')
-

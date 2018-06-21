@@ -1,6 +1,7 @@
 
 from random import random, sample, expovariate
 from glob_def import *
+from dbc_msg_conversion import DbcMsgConvertor
 
 class Vehicle:
     speed = .0
@@ -10,10 +11,13 @@ class Vehicle:
     speedometer = []
     tachometer = []
     braking_record = []
+    dbc_data = None
     def __init__(self, model="unknown", speed=0.0, tacho=0.0):
         self.speed = speed
         self.tacho = tacho
+        dbc_data = DbcMsgConvertor(model)
         return
+        
     def record_gas_pedal_action(self, timestamp, value):
         self.speed = self.speed + self.speed_scale * value
         self.speedometer.append([timestamp, self.speed])

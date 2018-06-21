@@ -29,6 +29,7 @@ def main():
     simulation_start = 0
     simulation_time = 15 # simulation time, unit of second
     event_list = []
+    car = Vehicle("Toyota_prius")
 
     # generate constant events for every second
     for i in range(simulation_time):
@@ -47,7 +48,7 @@ def main():
 
     speed_list = car.get_speedometer_record()
 
-    write_can_packet(event_list)
+    write_can_packet(car, event_list)
 
     # plot the result
     draw_speedometer(speed_list)
