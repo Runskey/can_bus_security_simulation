@@ -6,6 +6,8 @@ CAN_DATA_RATE = 1e6 # CAN bus 2.0B data rate = 1Mbps
 CAN_FRAME_LEN = 128 # Exten
 BUS_LOAD = 0.3
 
+ACCE_RATIO = 0.2
+
 # class definition
 class CarEvent:
     # car event definition

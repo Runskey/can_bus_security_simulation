@@ -1,40 +1,64 @@
 
 from random import random, sample, expovariate
-from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD
+from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD, ACCE_RATIO
 from dbc_msg_conversion import DbcMsgConvertor
 from math import exp
 
 class Vehicle:
-    speed = .0
-    enginespeed = 1.0
-    torque = .0
 
-    max_engine_speed = 5000.0
-    min_engine_speed = 0.1
+    max_engine_speed = 5000.0 # unit: RPM
+    min_engine_speed = 100.0 # unit: RPM
+    max_torque = 250.0 # unit: Nm
+    max_delta_speed = 4.0 # max speed increment in 1 second
+    max_acce_power = max_delta_speed*1e-3/BUS_LOAD/ACCE_RATIO  # max speed increment to a scaling factor
 
-    gas_pedal_to_power_ratio = 1.0
-    torque_to_acce_power_ratio = 1.0
-    speed_to_enginespeed_ratio = 1.0
-    speed_scale = 0.06
+    gas_pedal_to_power_ratio = 70.0 # map pedal position [0,1] to power [0,70]Kw
+    speed_to_enginespeed_ratio = 44.20 # map speed[kmp] to engine speed[rpm] 
+
+    torque_to_acce_power_ratio = max_acce_power/max_torque/3.0 # map torque to accelerator factor
+
     brake_scale = 0.3
-    speedometer = []
-    tachometer = []
-    braking_record = []
-    torque_record = []
+
     dbc_data = None
-    def __init__(self, model="unknown", speed=0.0, tacho=0.0):
+    def __init__(self, model="unknown", speed=0.0):
         self.speed = speed
-        self.tacho = tacho
+        self.enginespeed = Vehicle.min_engine_speed
         self.dbc_data = DbcMsgConvertor(model)
+        self.speedometer = []
+        self.tachometer = []
+        self.braking_record = []
+        self.torquemeter = []
+        self.accpower_record = []
         return
 
     def __get_gear_ratio(self):
-        if self.speed <= 0:
-            gear_ratio = 1.0
-        elif self.speed >= 120:
-            gear_ratio = 0.2
-        else:
-            gear_ratio = (580-4*self.speed)/500.0
+
+        def linear_interp(x1, x2, y1, y2, x):
+            return (y1*(x-x2)-y2*(x-x1))/(x1-x2)
+        # 1
+        if self.speed <= 15.0:
+            gear_ratio = 3.545
+        elif 15.0 < self.speed <= 20.0:
+            gear_ratio = linear_interp(15.0, 20.0, 3.545, 1.956, self.speed)
+        # 2
+        elif 20.0 < self.speed <= 30.0:
+            gear_ratio = 1.956
+        elif 30.0 < self.speed <= 40.0:
+            gear_ratio = linear_interp(30.0, 40.0, 1.956, 1.303, self.speed)
+        # 3
+        elif 40.0 < self.speed <= 55.0:
+            gear_ratio = 1.303
+        elif 55.0 < self.speed <= 60.0:
+            gear_ratio = linear_interp(55.0, 60.0, 1.303, 0.892, self.speed)
+        # 4
+        elif 60.0 < self.speed <= 70.0:
+            gear_ratio = 0.892
+        elif 70.0 < self.speed <= 80.0:
+            gear_ratio = linear_interp(70.0, 80.0, 0.892, 0.707, self.speed)
+        # 5
+        else: # self.speed > 80
+            gear_ratio = 0.707
+
         return gear_ratio
 
     def __record_car_status(self, timestamp):
@@ -72,11 +96,17 @@ class Vehicle:
             # 2. Calculate accelerating rate by torque and gear ratio
             # 3. Update speed by accelerating rate
             # 4. Update engine speed by speed
-            torque = value / self.enginespeed * self.gas_pedal_to_power_ratio
+            torque = value / self.enginespeed * 9550.0 * self.gas_pedal_to_power_ratio
+            torque = Vehicle.max_torque if torque>Vehicle.max_torque else torque
+            
             acce_power = torque * self.__get_gear_ratio() * self.torque_to_acce_power_ratio
+            acce_power = Vehicle.max_acce_power if acce_power>Vehicle.max_acce_power else acce_power
+
             self.speed = self.speed + acce_power
             self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
             self.__audit_engine_speed()
+            self.torquemeter.append([timestamp, torque])
+            self.accpower_record.append([timestamp, acce_power])
 
         self.__record_car_status(timestamp)
         return
@@ -96,6 +126,10 @@ class Vehicle:
         return self.tachometer 
     def get_braking_record(self):
         return self.braking_record
+    def get_torque_record(self):
+        return self.torquemeter
+    def get_accpower_record(self):
+        return self.accpower_record
 
 
 def get_event_timing_from_interval(start_second, stop_second, load_ratio):
@@ -111,11 +145,13 @@ def generate_constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
 
     # -----------------------------------------------------
     # create accelaration event
-    acce_ratio = 0.2
+    acce_ratio = ACCE_RATIO
     time_seq = get_event_timing_from_interval(start_time, stop_time, acce_ratio)
 
     for i in time_seq:
-        event = CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=random() if acceleration>0 else 0)
+        # event = CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=random() if acceleration>0 else 0)
+        event = CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=0.95 if acceleration>0 else 0)
+    
         event_list.append(event)
 
     # -----------------------------------------------------
@@ -152,6 +188,7 @@ def generate_sporadic_event(start_time = .0, stop_time = 10.0):
 
     return event_list
 
+'''
 def calculate_vehicle_speed(start_time, stop_time, event_list, initial_speed=.0):
     speed_scale = 0.1
     current_speed = initial_speed
@@ -167,6 +204,7 @@ def calculate_vehicle_speed(start_time, stop_time, event_list, initial_speed=.0)
             speed_list.append(current_speed)
 
     return speed_list
+'''
 
 def calculate_vehicle_odometer(start_time, stop_time, event_list, initial_speed=.0):
     odometer_list = []

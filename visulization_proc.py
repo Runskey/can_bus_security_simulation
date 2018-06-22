@@ -36,10 +36,11 @@ def draw_speedometer(speedometer_record):
     mplt.title("Speed (Kmph)", fontsize=10, fontweight=0, color='grey', loc='left')
     # remove labels
     mplt.xlabel('Time (Second)')
-    mplt.tick_params(labelbottom=False)
+    mplt.tick_params(labelbottom=True)
     #mplt.ylabel('Speed (Km/H)')
     mplt.tick_params(labelleft=True)
 
+    return
     # draw speedometer gauge
     axes = mplt.subplot(gs[1])
     draw_gauge(speedometer_record[-1][1], axes, labels=[str(i) for i in range(10, 180, 10)], colors='jet_r', title='Speedometer')
@@ -68,13 +69,64 @@ def draw_tachometer(tachometer_record):
     mplt.title("RPM", fontsize=10, fontweight=0, color='grey', loc='left')
     # remove labels
     mplt.xlabel('Time (Second)')
-    mplt.tick_params(labelbottom=False)
+    mplt.tick_params(labelbottom=True)
     #mplt.ylabel('Speed (Km/H)')
     mplt.tick_params(labelleft=True)
 
+    return
     # draw speedometer gauge
     axes = mplt.subplot(gs[1])
     draw_gauge(tachometer_record[-1][1], axes, labels=[str(i) for i in range(100, 8000, 100)], colors='jet_r', title='Speedometer')
+    return
+
+def draw_torque_curve(torque_record):
+    # customize figure properties
+    scr_dpi, style = 96, 'seaborn-white'
+    mplt.figure(3, figsize=(1200/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
+    mplt.style.use(style)
+    gs = gridspec.GridSpec(1,2, width_ratios=[2,1])
+    mplt.subplot(gs[0])
+
+    # drow speed curves
+    time = [i[0] for i in torque_record]
+    torque = [i[1] for i in torque_record]
+    mplt.plot(time, torque, marker='', color='mediumvioletred', \
+                linewidth=2, alpha=1, \
+                path_effects=[mpe.SimpleLineShadow(shadow_color='b'), mpe.Normal()])
+    # mplt.grid(True)
+    # mplt.ylim((-2, 2))
+    # mplt.legend(['sine'])
+    mplt.title("Torque", fontsize=10, fontweight=0, color='grey', loc='left')
+    # remove labels
+    mplt.xlabel('Time (Second)')
+    mplt.tick_params(labelbottom=True)
+    #mplt.ylabel('Speed (Km/H)')
+    mplt.tick_params(labelleft=True)
+    return
+
+def draw_acc_curve(accpwr_record):
+    # customize figure properties
+    scr_dpi, style = 96, 'seaborn-white'
+    mplt.figure(4, figsize=(1200/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
+    mplt.style.use(style)
+    gs = gridspec.GridSpec(1,2, width_ratios=[2,1])
+    mplt.subplot(gs[0])
+
+    # drow speed curves
+    time = [i[0] for i in accpwr_record]
+    accpwr = [i[1] for i in accpwr_record]
+    mplt.plot(time, accpwr, marker='', color='mediumvioletred', \
+                linewidth=2, alpha=1, \
+                path_effects=[mpe.SimpleLineShadow(shadow_color='b'), mpe.Normal()])
+    # mplt.grid(True)
+    # mplt.ylim((-2, 2))
+    # mplt.legend(['sine'])
+    mplt.title("Acc Pwr", fontsize=10, fontweight=0, color='grey', loc='left')
+    # remove labels
+    mplt.xlabel('Time (Second)')
+    mplt.tick_params(labelbottom=True)
+    #mplt.ylabel('Speed (Km/H)')
+    mplt.tick_params(labelleft=True)
     return
 
 def degree_range(n): 

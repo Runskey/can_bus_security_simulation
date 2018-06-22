@@ -2,9 +2,10 @@ import sys
 import struct
 import time
 
-from vehicle_model import Vehicle, generate_constant_event, generate_sporadic_event, calculate_vehicle_speed
+from vehicle_model import Vehicle, generate_constant_event, generate_sporadic_event
 from packet_proc import write_can_packet
-from visulization_proc import draw_speedometer, draw_tachometer, visual_setup, visual_teardown
+from visulization_proc import draw_speedometer, draw_tachometer, draw_torque_curve, draw_acc_curve
+from visulization_proc import visual_setup, visual_teardown
 from glob_def import CarEvent
 
 def sort_event_by_timestamp(event_list):
@@ -27,7 +28,7 @@ def main():
     
     #simulation_start = time.time()
     simulation_start = 0
-    simulation_time = 15 # simulation time, unit of second
+    simulation_time = 20 # simulation time, unit of second
     event_list = []
 
     # generate constant events for every second
@@ -37,8 +38,8 @@ def main():
         event_list.extend(const_event)
 
     # generate braking events only on sparodic timing points
-    sparodic_event = generate_sporadic_event(simulation_start, simulation_start+simulation_time)
-    event_list.extend(sparodic_event)
+    #sparodic_event = generate_sporadic_event(simulation_start, simulation_start+simulation_time)
+    #event_list.extend(sparodic_event)
 
     sort_event_by_timestamp(event_list)
 
@@ -47,6 +48,8 @@ def main():
 
     speed_list = car.get_speedometer_record()
     tach_list = car.get_tachometer_record()
+    torque_list = car.get_torque_record()
+    accpwr_list = car.get_accpower_record()
 
     write_can_packet(car, event_list)
 
@@ -54,6 +57,8 @@ def main():
     visual_setup()
     draw_speedometer(speed_list)
     draw_tachometer(tach_list)
+    draw_torque_curve(torque_list)
+    draw_acc_curve(accpwr_list)
     visual_teardown()
 
     return
