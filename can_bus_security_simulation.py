@@ -5,6 +5,7 @@ import time
 from vehicle_model import Vehicle, generate_constant_event, generate_sporadic_event
 from packet_proc import write_can_packet
 from visulization_proc import draw_speedometer, draw_tachometer, draw_torque_curve, draw_acc_curve
+from visulization_proc import draw_timed_sequence
 from visulization_proc import visual_setup, visual_teardown
 from glob_def import CarEvent
 
@@ -46,19 +47,20 @@ def main():
     car = Vehicle("Toyota_prius")
     drive_the_car(car, event_list)
 
-    speed_list = car.get_speedometer_record()
-    tach_list = car.get_tachometer_record()
-    torque_list = car.get_torque_record()
-    accpwr_list = car.get_accpower_record()
-
     write_can_packet(car, event_list)
 
     # visualize the result
     visual_setup()
-    draw_speedometer(speed_list)
-    draw_tachometer(tach_list)
-    draw_torque_curve(torque_list)
-    draw_acc_curve(accpwr_list)
+
+    draw_timed_sequence(car.get_speedometer_record(), "Speed [kmph])", (-10, 180))
+    draw_timed_sequence(car.get_tachometer_record(), "Engine Speed [RPM]", (-10, 6000))
+    draw_timed_sequence(car.get_torque_record(), "Torque [N-m]", (-10, 260))
+
+    #draw_speedometer(speed_list)
+    #draw_tachometer(tach_list)
+    #draw_torque_curve(torque_list)
+    #draw_acc_curve(accpwr_list)
+    
     visual_teardown()
 
     return
