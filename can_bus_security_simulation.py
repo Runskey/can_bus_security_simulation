@@ -4,7 +4,7 @@ import time
 
 from vehicle_model import Vehicle, generate_constant_event, generate_sporadic_event, calculate_vehicle_speed
 from packet_proc import write_can_packet
-from visulization_proc import draw_speedometer, gauge, visual_setup, visual_teardown
+from visulization_proc import draw_speedometer, draw_tachometer, visual_setup, visual_teardown
 from glob_def import CarEvent
 
 def sort_event_by_timestamp(event_list):
@@ -46,12 +46,14 @@ def main():
     drive_the_car(car, event_list)
 
     speed_list = car.get_speedometer_record()
+    tach_list = car.get_tachometer_record()
 
     write_can_packet(car, event_list)
 
     # visualize the result
     visual_setup()
     draw_speedometer(speed_list)
+    draw_tachometer(tach_list)
     visual_teardown()
 
     return
