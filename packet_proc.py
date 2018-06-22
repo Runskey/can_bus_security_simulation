@@ -1,6 +1,6 @@
 #from scapy.all import IP, UDP, send
 
-from glob_def import CanEvent
+from glob_def import CarEvent
 from scapy.layers.can import CAN
 from scapy.layers.inet import IP, UDP
 from scapy.utils import wrpcap
@@ -9,7 +9,7 @@ from dbc_msg_conversion import DbcMsgConvertor
 
 import struct
 
-def write_can_packet(car:Vehicle, event_list:CanEvent):
+def write_can_packet(car:Vehicle, event_list:CarEvent):
     pkt_list = []
     for event in event_list:
         data = car.dbc_data.simple_msg_encode(event.ID, event.value)
@@ -20,7 +20,7 @@ def write_can_packet(car:Vehicle, event_list:CanEvent):
     wrpcap("can_packet.pcap", pkt_list)
     return
 
-def write_udp_packet(car:Vehicle, event_list:CanEvent, src_ip, dst_ip, src_port=1236, dst_port=0x0cb0):
+def write_udp_packet(car:Vehicle, event_list:CarEvent, src_ip, dst_ip, src_port=1236, dst_port=0x0cb0):
     pkt_list = []
     for event in event_list:
         data = car.dbc_data.simple_msg_encode(event.ID, event.value)

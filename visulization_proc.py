@@ -3,12 +3,25 @@ import numpy as np
 
 from matplotlib import cm
 from matplotlib import pyplot as mplt
+from matplotlib import patheffects as mpe
 from matplotlib.patches import Circle, Wedge, Rectangle
+
+def visual_setup():
+    mplt.ion()
+    return
+
+def visual_teardown():
+    mplt.ioff()
+    mplt.show()
+    return
 
 def draw_speedometer(speedometer_record):
     #gauge(speedometer_record, labels=['LOW','MEDIUM','HIGH','VERY HIGH','EXTREME'], colors='jet_r', arrow=1, title='Speedometer', fname=False)
     gauge(speedometer_record, labels=[str(i) for i in range(10, 180, 10)], colors='jet_r', title='Speedometer')
     return
+
+def draw_tachometer(tachometer_record):
+    pass
 
 def degree_range(n): 
     start = np.linspace(0,180,n+1, endpoint=True)[0:-1]
@@ -45,12 +58,26 @@ def gauge(speedometer_record, labels=['LOW','MEDIUM','HIGH','VERY HIGH','EXTREME
     time = [i[0] for i in speedometer_record]
     speed = [i[1] for i in speedometer_record]
 
-    mplt.figure(1, figsize=(9,3))
+    scr_dpi, style = 96, 'seaborn-white'
+    mplt.figure(1, figsize=(1200/scr_dpi, 350/scr_dpi), dpi=scr_dpi)
+    mplt.style.use(style)
     gs = gridspec.GridSpec(1,2, width_ratios=[2,1])
     mplt.subplot(gs[0])
+    mplt.plot(time, speed, marker='', color='mediumvioletred', \
+                linewidth=2, alpha=1, \
+                path_effects=[mpe.SimpleLineShadow(shadow_color='b'), mpe.Normal()])
+    # mplt.grid(True)
+    # mplt.ylim((-2, 2))
+    # mplt.legend(['sine'])
+    mplt.title("Speed (Kmph)", fontsize=10, fontweight=0, color='grey', loc='left')
+    # remove labels
     mplt.xlabel('Time (Second)')
-    mplt.ylabel('Speed (Km/H)')
-    mplt.plot(time, speed)
+    mplt.tick_params(labelbottom=False)
+
+    #mplt.ylabel('Speed (Km/H)')
+    mplt.tick_params(labelleft=True)
+
+    # ------------------------------------------
 
     #mplt.subplot(gs[1])
     #mplt.xlabel('Time (Second)')
@@ -110,8 +137,5 @@ def gauge(speedometer_record, labels=['LOW','MEDIUM','HIGH','VERY HIGH','EXTREME
     ax.axes.set_yticks([])
     ax.axis('equal')
     mplt.tight_layout()
-
-    mplt.show()
-
 
 # gauge(labels=['La Nina','Alert','Watch','Neutral','Watch','Alert','El Nino'], colors='RdBu', arrow=3, title='Speedometer')

@@ -1,4 +1,4 @@
-from glob_def import *
+from glob_def import CarEvent
 
 class SimpleMsg:
     can_id = 0
@@ -9,7 +9,6 @@ class SimpleMsg:
     scale = 0.0
     offset = 0.0
     unit = ""
-
     def __init__(self, can_id, byte_len, bit_start_pos, bit_num, scale, offset, desc = "", unit=""):
         self.can_id = can_id
         self.byte_len = byte_len
@@ -21,26 +20,36 @@ class SimpleMsg:
         self.unit = unit
 
 DBC_DATABASE_TOYOTA_PRIUS = { \
-    0x00b4 : SimpleMsg(can_id=0xb4, byte_len=8,           \
+    CarEvent.CAR_EVENT_SPEED: \
+            SimpleMsg(can_id=0xb4, byte_len=8,           \
                        bit_start_pos=47, bit_num=16,      \
                        scale=0.01, offset=0.0,            \
                        desc="Current speed of the automobile", unit="kmph"), \
-    0x01c4:  SimpleMsg(can_id=0x01c4, byte_len=8,         \
+    CarEvent.CAR_EVENT_RPM:  \
+            SimpleMsg(can_id=0x01c4, byte_len=8,         \
                        bit_start_pos=15, bit_num=16,      \
                        scale=1.0, offset=-400.0,          \
                        desc="ICE RPM", unit=""),          \
-    0x0224:  SimpleMsg(can_id=0x0224, byte_len=8,         \
+    CarEvent.CAR_EVENT_BRAKE_PEDAL:  \
+            SimpleMsg(can_id=0x0224, byte_len=8,         \
                        bit_start_pos=47, bit_num=16,      \
                        scale=0.01, offset=0.0,            \
                        desc="Brake pedal position sensor", unit=""), \
-    0x0230:  SimpleMsg(can_id=0x0230, byte_len=7,         \
+    CarEvent.CAR_EVENT_BRAKE_SENSOR:  \
+            SimpleMsg(can_id=0x0230, byte_len=7,         \
                        bit_start_pos=31, bit_num=8,       \
                        scale=1.0, offset=0.0,             \
                        desc="Brake sensor", unit=""),     \
-    0x0245:  SimpleMsg(can_id=0x0245, byte_len=5,         \
+    CarEvent.CAR_EVENT_GAS_PEDAL:  \
+            SimpleMsg(can_id=0x0245, byte_len=5,         \
                        bit_start_pos=15, bit_num=16,      \
                        scale=0.0062, offset=0,            \
-                       desc="Acceleration pedal position", unit="mph") \
+                       desc="Acceleration pedal position", unit="mph"), \
+    CarEvent.CAR_EVENT_BUS_DIAG:  \
+            SimpleMsg(  can_id=0x7df, byte_len=8, \
+                        bit_start_pos=15, bit_num=16, \
+                        scale=1.0, offset=0, \
+                        desc="Universal diagnostic message", unit="") \
 }
 
 class DbcMsgConvertor:
@@ -48,12 +57,13 @@ class DbcMsgConvertor:
     dbc_database = None
     def __init__(self, model):
         self.vehicle_model = model
-        database_name = "DATABASE_" + str(model).upper()
-        if database_name in dir():
+        database_name = "DBC_DATABASE_" + str(model).upper()
+        try:
             self.dbc_database = eval(database_name)
-        else:
+        except NameError:
             print("DBC database %s doesn't exist!" % database_name)
             # raise an error
+            assert(False)
 
     def simple_msg_encode(self, id, value):
         msg = self.dbc_database[id]

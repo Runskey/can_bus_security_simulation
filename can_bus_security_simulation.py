@@ -4,8 +4,8 @@ import time
 
 from vehicle_model import Vehicle, generate_constant_event, generate_sporadic_event, calculate_vehicle_speed
 from packet_proc import write_can_packet
-from visulization_proc import draw_speedometer, gauge
-from glob_def import *
+from visulization_proc import draw_speedometer, gauge, visual_setup, visual_teardown
+from glob_def import CarEvent
 
 def sort_event_by_timestamp(event_list):
     def customer_key(event):
@@ -16,9 +16,9 @@ def sort_event_by_timestamp(event_list):
 
 def drive_the_car(car, event_list):
     for event in event_list:
-        if event.ID == CAN_ID_ACCE:
+        if event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
             car.record_gas_pedal_action(event.timestamp, event.value)
-        elif event.ID == CAN_ID_BRAK:
+        elif event.ID == CarEvent.CAR_EVENT_BRAKE_PEDAL:
             car.record_brake_pedal_action(event.timestamp, event.value)
     
     return
@@ -29,7 +29,6 @@ def main():
     simulation_start = 0
     simulation_time = 15 # simulation time, unit of second
     event_list = []
-    car = Vehicle("Toyota_prius")
 
     # generate constant events for every second
     for i in range(simulation_time):
@@ -43,15 +42,17 @@ def main():
 
     sort_event_by_timestamp(event_list)
 
-    car = Vehicle("test car")
+    car = Vehicle("Toyota_prius")
     drive_the_car(car, event_list)
 
     speed_list = car.get_speedometer_record()
 
     write_can_packet(car, event_list)
 
-    # plot the result
+    # visualize the result
+    visual_setup()
     draw_speedometer(speed_list)
+    visual_teardown()
 
     return
 
