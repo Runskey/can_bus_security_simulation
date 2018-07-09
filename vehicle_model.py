@@ -1,6 +1,6 @@
 
 from random import random, sample, expovariate
-from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD, ACCE_RATIO
+from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD, ACCE_RATIO, BRAK_RATIO
 from dbc_msg_conversion import DbcMsgConvertor
 from math import exp
 
@@ -9,13 +9,15 @@ class Vehicle:
     max_engine_speed = 5000.0 # unit: RPM
     min_engine_speed = 100.0 # unit: RPM
     max_torque = 250.0 # unit: Nm
-    max_delta_speed = 4.0 # max speed increment in 1 second
+    max_delta_speed = 8.0 # max speed increment in 1 second
     max_acce_power = max_delta_speed*1e-3/BUS_LOAD/ACCE_RATIO  # max speed increment to a scaling factor
 
     gas_pedal_to_power_ratio = 70.0 # map pedal position [0,1] to power [0,70]Kw
     speed_to_enginespeed_ratio = 44.20 # map speed[kmp] to engine speed[rpm] 
-
     torque_to_acce_power_ratio = max_acce_power/max_torque/3.0 # map torque to accelerator factor
+
+    speed_elapsing_factor = 3.35e-4
+    power_elapsing_factor = 5.18e-4
 
     brake_scale = 0.3
 
@@ -23,6 +25,8 @@ class Vehicle:
     def __init__(self, model="unknown", speed=0.0):
         self.speed = speed
         self.enginespeed = Vehicle.min_engine_speed
+        self.power = .0
+        self.torque = 70.0
         self.dbc_data = DbcMsgConvertor(model)
         self.speedometer = []
         self.tachometer = []
@@ -64,10 +68,13 @@ class Vehicle:
     def __record_car_status(self, timestamp):
         self.speedometer.append([timestamp, self.speed])
         self.tachometer.append([timestamp, self.enginespeed])
+        self.torquemeter.append([timestamp, self.torque])
         return
 
-    def __get_brake_ratio(self, value):
-        return exp(value)
+    def __get_speed_loss_from_brake(self, value):
+        assert(value <= 1.0)
+        speed_loss = self.speed * exp(value)/exp(1.0)*1e-3/BUS_LOAD/Vehicle.brake_scale
+        return speed_loss
 
     def __audit_engine_speed(self):
         if self.enginespeed > self.max_engine_speed:
@@ -79,12 +86,19 @@ class Vehicle:
     def __no_driving_action(self):
         if self.speed == 0:
             return
-        speed_change =  self.speed * ((random()-0.7)*0.1)
-        self.speed = self.speed + speed_change
+
+        road_force = (random()-0.7)
+
+        self.speed += self.speed*road_force*Vehicle.speed_elapsing_factor
         if self.speed <= 0:
-            self.speed = 0
+            self.speed = self.enginespeed = self.power = self.torque = 0.0
+            return
+
         self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
         self.__audit_engine_speed()
+        self.power += self.power*road_force*Vehicle.power_elapsing_factor
+        self.torque = self.power * 9550.0 / self.enginespeed
+        self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
         return
 
     def record_gas_pedal_action(self, timestamp, value):
@@ -96,29 +110,36 @@ class Vehicle:
             # 2. Calculate accelerating rate by torque and gear ratio
             # 3. Update speed by accelerating rate
             # 4. Update engine speed by speed
-            torque = value / self.enginespeed * 9550.0 * self.gas_pedal_to_power_ratio
-            torque = Vehicle.max_torque if torque>Vehicle.max_torque else torque
+            self.power = value * self.gas_pedal_to_power_ratio
+            self.torque = self.power * 9550.0 / self.enginespeed
+            self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
             
-            acce_power = torque * self.__get_gear_ratio() * self.torque_to_acce_power_ratio
+            acce_power = self.torque * self.__get_gear_ratio() * self.torque_to_acce_power_ratio
             acce_power = Vehicle.max_acce_power if acce_power>Vehicle.max_acce_power else acce_power
 
             self.speed = self.speed + acce_power
             self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
             self.__audit_engine_speed()
-            self.torquemeter.append([timestamp, torque])
             self.accpower_record.append([timestamp, acce_power])
 
         self.__record_car_status(timestamp)
         return
     
     def record_brake_pedal_action(self, timestamp, value):
-        speed_loss = self.__get_brake_ratio(value)
+        speed_loss = self.__get_speed_loss_from_brake(value)
         self.speed = (self.speed-speed_loss) if (self.speed > speed_loss) else 0.0
         self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
         self.__audit_engine_speed()
-
+        self.torque = self.power * 9550.0 / self.enginespeed
+        self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
+    
         self.__record_car_status(timestamp)
         self.braking_record.append([timestamp, value])
+    
+    def record_no_action(self, timestamp):
+        self.__no_driving_action()
+        self.__record_car_status(timestamp)
+        return
 
     def get_speedometer_record(self):
         return self.speedometer
@@ -147,12 +168,7 @@ def generate_constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
     # create accelaration event
     acce_ratio = ACCE_RATIO
     time_seq = get_event_timing_from_interval(start_time, stop_time, acce_ratio)
-
-    for i in time_seq:
-        # event = CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=random() if acceleration>0 else 0)
-        event = CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=0.95 if acceleration>0 else 0)
-    
-        event_list.append(event)
+    event_list.extend([CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=0.95) for i in time_seq if acceleration>0])
 
     # -----------------------------------------------------
     # create diagnostic event
@@ -165,14 +181,18 @@ def generate_constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
     
     return event_list
 
-def generate_sporadic_event(start_time = .0, stop_time = 10.0):
+def generate_sporadic_event(start_time = .0, stop_time = 10.0, brake=0):
     event_list = []
 
     # -----------------------------------------------------
     # create braking event
-    brak_ratio = 0.03
-    braking_interval = 5.0 # braking event average interval
+    brak_ratio = BRAK_RATIO
+    time_seq = get_event_timing_from_interval(start_time, stop_time, brak_ratio)
+    event_list.extend([CarEvent("braking", timestamp=i, ID=CarEvent.CAR_EVENT_BRAKE_PEDAL, value=0.5) for i in time_seq if brake>0])
 
+    return event_list
+
+    braking_interval = 5.0 # braking event average interval
     while True:
         braking_start = expovariate(1.0/braking_interval)
 
@@ -180,32 +200,16 @@ def generate_sporadic_event(start_time = .0, stop_time = 10.0):
         if (braking_start + start_time + 1 >= stop_time):
             break
         
-        time_seq = get_event_timing_from_interval(start_time+braking_start, start_time+braking_start+1.0, brak_ratio)
-
+        # braking_value = random()
+        braking_value = 0.5
         for i in time_seq:
-            event = CarEvent(desc="breaking", timestamp=i, ID=CarEvent.CAR_EVENT_BRAKE_PEDAL, value=random())
+            event = CarEvent(desc="braking", timestamp=i, ID=CarEvent.CAR_EVENT_BRAKE_PEDAL, value=braking_value)
             event_list.append(event)
 
-    return event_list
 
-'''
-def calculate_vehicle_speed(start_time, stop_time, event_list, initial_speed=.0):
-    speed_scale = 0.1
-    current_speed = initial_speed
-    current_time = start_time
-    speed_list = [current_speed]
-    for i in event_list:
-        if i.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
-            current_speed = current_speed + speed_scale * i.value
-
-        # one second elapsed
-        if i.timestamp > (current_time+1):
-            current_time = current_time + 1
-            speed_list.append(current_speed)
-
-    return speed_list
-'''
-
-def calculate_vehicle_odometer(start_time, stop_time, event_list, initial_speed=.0):
-    odometer_list = []
-    return odometer_list
+def generate_empty_event(start_time, stop_time, event_list):
+    full_time = range(int(start_time*1e3), int(stop_time*1e3))
+    busy_time = [event.timestamp*1e3 for event in event_list]
+    free_time = set(full_time)-set(busy_time)
+    free_list = [CarEvent("Free", time*1e-3, CarEvent.CAR_EVENT_FREE) for time in free_time]
+    return free_list

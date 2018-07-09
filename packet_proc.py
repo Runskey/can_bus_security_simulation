@@ -12,6 +12,8 @@ import struct
 def write_can_packet(car:Vehicle, event_list:CarEvent):
     pkt_list = []
     for event in event_list:
+        if event.ID == CarEvent.CAR_EVENT_FREE:
+            continue
         data = car.dbc_data.simple_msg_encode(event.ID, event.value)
         pkt = CAN(identifier=event.ID, length=len(data), data=data)
         pkt.time = event.timestamp

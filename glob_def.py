@@ -7,10 +7,12 @@ CAN_FRAME_LEN = 128 # Exten
 BUS_LOAD = 0.3
 
 ACCE_RATIO = 0.2
+BRAK_RATIO = 0.03
 
 # class definition
 class CarEvent:
     # car event definition
+    CAR_EVENT_FREE = 0x100
     CAR_EVENT_GAS_PEDAL = 0x101
     CAR_EVENT_BRAKE_PEDAL = 0x102
     CAR_EVENT_BRAKE_SENSOR = 0x103
