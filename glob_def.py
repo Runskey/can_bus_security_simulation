@@ -19,8 +19,9 @@ class CarEvent:
 
     CAR_EVENT_BUS_DIAG = 0x203
 
-    CAR_EVENT_RPM = 0x301
-    CAR_EVENT_SPEED = 0x302
+    CAR_EVENT_QUERY_RPM = 0x301
+    CAR_EVENT_QUERY_SPEED = 0x302
+    CAR_EVENT_QUERY_TORQUE = 0x303
 
     timestamp = .0
     desc = ""

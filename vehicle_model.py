@@ -135,7 +135,10 @@ class Vehicle:
     
         self.__record_car_status(timestamp)
         self.braking_record.append([timestamp, value])
-    
+
+    def query_vehicle_status(self):
+        return self.speed, self.enginespeed, self.torque
+
     def record_no_action(self, timestamp):
         self.__no_driving_action()
         self.__record_car_status(timestamp)
@@ -169,6 +172,8 @@ def generate_constant_event(start_time = .0, stop_time = 10.0, acceleration=0):
     acce_ratio = ACCE_RATIO
     time_seq = get_event_timing_from_interval(start_time, stop_time, acce_ratio)
     event_list.extend([CarEvent(desc="Accelerating", timestamp=i, ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=0.95) for i in time_seq if acceleration>0])
+
+    return event_list
 
     # -----------------------------------------------------
     # create diagnostic event
@@ -213,3 +218,10 @@ def generate_empty_event(start_time, stop_time, event_list):
     free_time = set(full_time)-set(busy_time)
     free_list = [CarEvent("Free", time*1e-3, CarEvent.CAR_EVENT_FREE) for time in free_time]
     return free_list
+
+def generate_query_event(timestamp, speed, enginespeed, torque):
+    query_list = []
+    query_list.append(CarEvent("query speed", timestamp=timestamp, ID=CarEvent.CAR_EVENT_QUERY_SPEED, value=speed))
+    query_list.append(CarEvent("query enginespeed", timestamp=timestamp, ID=CarEvent.CAR_EVENT_QUERY_RPM, value=enginespeed))
+    query_list.append(CarEvent("query torque", timestamp=timestamp, ID=CarEvent.CAR_EVENT_QUERY_TORQUE, value=torque))
+    return query_list

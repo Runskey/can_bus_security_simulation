@@ -20,15 +20,20 @@ class SimpleMsg:
         self.unit = unit
 
 DBC_DATABASE_TOYOTA_PRIUS = { \
-    CarEvent.CAR_EVENT_SPEED: \
+    CarEvent.CAR_EVENT_QUERY_SPEED: \
             SimpleMsg(can_id=0xb4, byte_len=8,           \
                        bit_start_pos=47, bit_num=16,      \
                        scale=0.01, offset=0.0,            \
                        desc="Current speed of the automobile", unit="kmph"), \
-    CarEvent.CAR_EVENT_RPM:  \
+    CarEvent.CAR_EVENT_QUERY_RPM:  \
             SimpleMsg(can_id=0x01c4, byte_len=8,         \
                        bit_start_pos=15, bit_num=16,      \
                        scale=1.0, offset=-400.0,          \
+                       desc="ICE RPM", unit=""),          \
+    CarEvent.CAR_EVENT_QUERY_TORQUE:  \
+            SimpleMsg(can_id=0x24, byte_len=8,         \
+                       bit_start_pos=15, bit_num=16,      \
+                       scale=1.0, offset=0.0,          \
                        desc="ICE RPM", unit=""),          \
     CarEvent.CAR_EVENT_BRAKE_PEDAL:  \
             SimpleMsg(can_id=0x0224, byte_len=8,         \
@@ -66,19 +71,45 @@ class DbcMsgConvertor:
             assert(False)
 
     def simple_msg_encode(self, id, value):
+        # convert value to pre-defined dbc format
+        # return value is string in hex represenation
+
         msg = self.dbc_database[id]
-        # calculate pre- and post- zero pending string
-        data_prezero = '00' * ((msg.bit_start_pos-msg.bit_num) >> 3 + 1)
-        data_postzero = '00' * (msg.byte_len-1-msg.bit_start_pos>>3)
-        # convert value to hex string
-        data_fmt = '0'+str(msg.bit_num>>2)+'x'
-        data_value = format(int((value-msg.offset)/msg.scale), data_fmt)
-        data = data_prezero + data_value + data_postzero
-        return data
+        binstr = '0' * msg.byte_len * 8
+
+        # convert value to binary
+        binfmt = '0'+str(msg.bit_num)+'b'
+        data_value = format(int((value-msg.offset)/msg.scale), binfmt)
+        assert(len(data_value)<=msg.bit_num)
+
+        # combine binary string
+        postzeronum = msg.byte_len*8-msg.bit_start_pos-msg.bit_num
+        binstr = '0'*msg.bit_start_pos + data_value + '0'*postzeronum
+
+        # convert binary to hex
+        hexfmt = '0'+str(msg.byte_len*2)+'x'
+        hexstr = format(int(binstr,2), hexfmt)
+
+        return hexstr
 
     def simple_msg_decode(self, id, data):
         msg = self.dbc_database[id]
-        byte_end = (msg.bit_start_pos>>3)*2 + 2
-        byte_start = (msg.bit_start_pos-msg.bit_num)>>3 * 2 + 2
-        value = int(data[byte_start:byte_end], 16)*msg.scale+msg.offset
+
+        bin_str = format(int(data, 16), '064b')
+        bin_value = bin_str[msg.bit_start_pos:msg.bit_start_pos+msg.bit_num]
+        value = int(bin_value, 2)*msg.scale+msg.offset
+
         return value
+
+    def get_msg_length_in_byte(self, id):
+        msg = self.dbc_database[id]
+        return msg.byte_len
+    def get_msg_can_id(self, id):
+        msg = self.dbc_database[id]
+        return msg.can_id
+    def get_event_id_by_can_id(self, can_id):
+        for i in self.dbc_database:
+            msg = self.dbc_database[i]
+            if msg.can_id == can_id:
+                return i
+        return -1
