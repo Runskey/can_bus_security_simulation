@@ -116,6 +116,10 @@ def read_car_event_from_udp_packet(car:Vehicle) -> CarEvent :
          = struct.unpack('=3I4B8B', udp_pkt.payload.original)
 
         event_id = car.dbc_data.get_event_id_by_can_id(udp_identifier)
+        if event_id == CarEvent.CAR_EVENT_UNKNOWN:
+            # ignore unknown event
+            continue
+
         event_time = ((udp_time_upper32<<32)+udp_time_lower32)*1e-3
         hex_str = '{0:02x}{1:02x}{2:02x}{3:02x}{4:02x}{5:02x}{6:02x}{7:02x}'.format( \
         byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7)
@@ -126,6 +130,7 @@ def read_car_event_from_udp_packet(car:Vehicle) -> CarEvent :
     return event_out
 
 if __name__ == '__main__':
-    data = struct.pack('=BHI', 0x12, 20, 1000)
-    pkt = IP(src='192.168.1.81', dst='192.168.1.10')/UDP(sport=12345, dport=55555)/data
-    send(pkt, inter=1, count=5)
+    pass
+#    data = struct.pack('=BHI', 0x12, 20, 1000)
+#    pkt = IP(src='192.168.1.81', dst='192.168.1.10')/UDP(sport=12345, dport=55555)/data
+#    send(pkt, inter=1, count=5)

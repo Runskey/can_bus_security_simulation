@@ -2,7 +2,9 @@ import sys
 import struct
 import time
 
-from vehicle_model import Vehicle, generate_constant_event, generate_sporadic_event, generate_empty_event, generate_query_event
+from vehicle_model import Vehicle
+from vehicle_model import generate_constant_event, generate_sporadic_event, generate_empty_event, generate_query_event
+from vehicle_model import generate_DOS_attack_via_odbII
 
 from packet_proc import write_car_event_to_can_packet, write_car_event_to_udp_packet
 from packet_proc import read_car_event_from_udp_packet
@@ -27,6 +29,7 @@ def drive_the_car(car, event_list):
 
 
     for event in event_list:
+        
         if event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
             car.record_gas_pedal_action(event.timestamp, event.value)
         elif event.ID == CarEvent.CAR_EVENT_BRAKE_PEDAL:
@@ -43,15 +46,18 @@ def drive_the_car(car, event_list):
 
 def main():
     
+
     generate_car_data = 1
     analyze_car_data = 1
+
+    dos_attack = 1
 
     car = Vehicle("Toyota_prius")
 
     if generate_car_data:
         #simulation_start = time.time()
         sim_start = 0
-        sim_time = 2 # simulation time, unit of second
+        sim_time = 20 # simulation time, unit of second
         event_list = []
 
         # generate constant events for every second
@@ -72,6 +78,13 @@ def main():
 
         sort_event_by_timestamp(event_list)
 
+        # generate DOS attack scenario
+        if dos_attack:
+            attack_start_time = 15.0
+            attack_stop_time = 16.0
+            attack_list = generate_DOS_attack_via_odbII(attack_start_time, attack_stop_time)
+            event_list.extend(attack_list)
+            sort_event_by_timestamp(event_list)
 
         # drive the car with preset events, and generate more real-time events
         rt_event_list = drive_the_car(car, event_list)

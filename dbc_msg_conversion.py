@@ -20,6 +20,11 @@ class SimpleMsg:
         self.unit = unit
 
 DBC_DATABASE_TOYOTA_PRIUS = { \
+    CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE: \
+            SimpleMsg(can_id=0x37, byte_len=7,           \
+                       bit_start_pos=0, bit_num=16,      \
+                       scale=1.0, offset=0.0,            \
+                       desc="Acceleration via ICE", unit=""), \
     CarEvent.CAR_EVENT_QUERY_SPEED: \
             SimpleMsg(can_id=0xb4, byte_len=8,           \
                        bit_start_pos=47, bit_num=16,      \
@@ -40,6 +45,11 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
                        bit_start_pos=47, bit_num=16,      \
                        scale=0.01, offset=0.0,            \
                        desc="Brake pedal position sensor", unit=""), \
+    CarEvent.CAR_EVENT_STEERING_WHEEL_ANGLE: \
+            SimpleMsg(can_id=0x25, byte_len=8, \
+                       bit_start_pos=3, bit_num=12,    \
+                       scale=1.5, offset=0.0,  \
+                       desc="Steer wheel angle", unit="deg"), \
     CarEvent.CAR_EVENT_BRAKE_SENSOR:  \
             SimpleMsg(can_id=0x0230, byte_len=7,         \
                        bit_start_pos=31, bit_num=8,       \
@@ -50,6 +60,16 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
                        bit_start_pos=15, bit_num=16,      \
                        scale=0.0062, offset=0,            \
                        desc="Acceleration pedal position", unit="mph"), \
+    CarEvent.CAR_EVENT_GAS_PEDAL:  \
+            SimpleMsg(can_id=0x0245, byte_len=5,         \
+                       bit_start_pos=15, bit_num=16,      \
+                       scale=0.0062, offset=0,            \
+                       desc="Acceleration pedal position", unit="mph"), \
+    CarEvent.CAR_EVENT_PCS_PRECOLLISION:  \
+            SimpleMsg(can_id=0x0283, byte_len=7,         \
+                       bit_start_pos=16, bit_num=24,      \
+                       scale=1.0, offset=0.0,            \
+                       desc="Pre-collision action", unit=""), \
     CarEvent.CAR_EVENT_BUS_DIAG:  \
             SimpleMsg(  can_id=0x7df, byte_len=8, \
                         bit_start_pos=15, bit_num=16, \
@@ -74,7 +94,11 @@ class DbcMsgConvertor:
         # convert value to pre-defined dbc format
         # return value is string in hex represenation
 
-        msg = self.dbc_database[id]
+        if id in self.dbc_database:
+            msg = self.dbc_database[id]
+        else:
+            msg = SimpleMsg(can_id=id, byte_len=8, bit_start_pos=16, bit_num=4, scale=1.0, offset=0.0)
+
         binstr = '0' * msg.byte_len * 8
 
         # convert value to binary
@@ -93,7 +117,10 @@ class DbcMsgConvertor:
         return hexstr
 
     def simple_msg_decode(self, id, data):
-        msg = self.dbc_database[id]
+        if id in self.dbc_database:
+            msg = self.dbc_database[id]
+        else:
+            msg = SimpleMsg(can_id=id, byte_len=8, bit_start_pos=16, bit_num=4, scale=1.0, offset=0.0)
 
         bin_str = format(int(data, 16), '064b')
         bin_value = bin_str[msg.bit_start_pos:msg.bit_start_pos+msg.bit_num]
@@ -102,14 +129,22 @@ class DbcMsgConvertor:
         return value
 
     def get_msg_length_in_byte(self, id):
-        msg = self.dbc_database[id]
-        return msg.byte_len
+        if id in self.dbc_database:
+            msg = self.dbc_database[id]
+            return msg.byte_len
+        else:
+            return 0
+
     def get_msg_can_id(self, id):
-        msg = self.dbc_database[id]
-        return msg.can_id
+        if id in self.dbc_database:
+            msg = self.dbc_database[id]
+            return msg.can_id
+        else:
+            return 0xffff
+            
     def get_event_id_by_can_id(self, can_id):
         for i in self.dbc_database:
             msg = self.dbc_database[i]
             if msg.can_id == can_id:
                 return i
-        return -1
+        return CarEvent.CAR_EVENT_UNKNOWN

@@ -1,6 +1,7 @@
 
-from random import random, sample, expovariate
-from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD, ACCE_RATIO, BRAK_RATIO
+from random import random, sample, expovariate, randint
+from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD, ACCE_RATIO, BRAK_RATIO, DOS_RATIO
+from glob_def import CarStatus
 from dbc_msg_conversion import DbcMsgConvertor
 from math import exp
 
@@ -19,6 +20,8 @@ class Vehicle:
     speed_elapsing_factor = 3.35e-4
     power_elapsing_factor = 5.18e-4
 
+    invalid_msg_threshold = 1e2
+
     brake_scale = 0.3
 
     dbc_data = None
@@ -33,6 +36,11 @@ class Vehicle:
         self.braking_record = []
         self.torquemeter = []
         self.accpower_record = []
+        self.status_record = []
+        
+        self.status = CarStatus.NORMAL
+        self.hpmsg = 0
+        self.driving_int =-1
         return
 
     def __get_gear_ratio(self):
@@ -144,6 +152,32 @@ class Vehicle:
         self.__record_car_status(timestamp)
         return
 
+    def drive_by_event(self, event:CarEvent):
+        # reset timer
+        if event.timestamp - self.driving_int >= 1.0:
+            self.driving_int = int(event.timestamp)
+            if self.status != CarStatus.NORMAL and self.hpmsg<Vehicle.invalid_msg_threshold:
+                self.status = CarStatus.NORMAL
+            self.hpmsg = 0
+
+        # drive the car by event fed in
+        if event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
+            self.record_gas_pedal_action(event.timestamp, event.value)
+        elif event.ID == CarEvent.CAR_EVENT_BRAKE_PEDAL:
+            self.record_brake_pedal_action(event.timestamp, event.value)
+        elif event.ID == CarEvent.CAR_EVENT_FREE:
+            self.record_no_action(event.timestamp)
+        
+        # detect DOS attack
+        if event.ID <= 0x10:
+            # count number of messages with high priority
+            self.hpmsg += 1
+            if self.status == CarStatus.NORMAL and self.hpmsg >= Vehicle.invalid_msg_threshold:
+                self.status = CarStatus.DOS_DETECTED
+                print("Car status changed: DOS attack detected at", event.timestamp)
+        # record car status
+        self.status_record.append([event.timestamp, self.status])
+        
     def get_speedometer_record(self):
         return self.speedometer
     def get_tachometer_record(self):
@@ -158,9 +192,9 @@ class Vehicle:
 
 def get_event_timing_from_interval(start_second, stop_second, load_ratio):
     # generate event on random timing point between start_time and stop_time, in unit of ms
-
-    event_number = int(CAN_DATA_RATE/CAN_FRAME_LEN * (stop_second-start_second) * BUS_LOAD * load_ratio)
     timing_interval = range(int(start_second*1e3), int(stop_second*1e3))
+    event_number = int(CAN_DATA_RATE/CAN_FRAME_LEN * (stop_second-start_second) * BUS_LOAD * load_ratio)
+    event_number = len(timing_interval) if event_number>len(timing_interval) else event_number
     timing_seq = [i*1e-3 for i in sample(timing_interval, event_number)]
     return sorted(timing_seq)
 
@@ -211,6 +245,15 @@ def generate_sporadic_event(start_time = .0, stop_time = 10.0, brake=0):
             event = CarEvent(desc="braking", timestamp=i, ID=CarEvent.CAR_EVENT_BRAKE_PEDAL, value=braking_value)
             event_list.append(event)
 
+def generate_DOS_attack_via_odbII(start_time, stop_time):
+
+    # create attack event
+    dos_ratio = DOS_RATIO
+    time_seq = get_event_timing_from_interval(start_time, stop_time, dos_ratio)
+
+    # generate invalude odb messages with ID ranging from 0 to 0x10 to hold the highest prioritized position
+    dos_list = [CarEvent("DOS attack", timestamp=time, ID=randint(0,0x10), value=random()) for time in time_seq]
+    return dos_list
 
 def generate_empty_event(start_time, stop_time, event_list):
     full_time = range(int(start_time*1e3), int(stop_time*1e3))
