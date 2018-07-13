@@ -14,6 +14,7 @@ DOS_RATIO = 0.9
 class CarStatus(Enum):
     NORMAL = 0
     DOS_DETECTED = 1
+    ENGINE_SHUTDOWN = 2
 
 # class definition
 class CarEvent:

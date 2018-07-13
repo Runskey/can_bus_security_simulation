@@ -22,7 +22,7 @@ class SimpleMsg:
 DBC_DATABASE_TOYOTA_PRIUS = { \
     CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE: \
             SimpleMsg(can_id=0x37, byte_len=7,           \
-                       bit_start_pos=0, bit_num=16,      \
+                       bit_start_pos=0, bit_num=40,      \
                        scale=1.0, offset=0.0,            \
                        desc="Acceleration via ICE", unit=""), \
     CarEvent.CAR_EVENT_QUERY_SPEED: \
@@ -141,7 +141,7 @@ class DbcMsgConvertor:
             return msg.can_id
         else:
             return 0xffff
-            
+
     def get_event_id_by_can_id(self, can_id):
         for i in self.dbc_database:
             msg = self.dbc_database[i]

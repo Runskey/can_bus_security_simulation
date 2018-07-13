@@ -1,5 +1,5 @@
 
-from random import random, sample, expovariate, randint
+from random import  seed, random, sample, expovariate, randint
 from glob_def import CarEvent, CAN_DATA_RATE, CAN_FRAME_LEN, BUS_LOAD, ACCE_RATIO, BRAK_RATIO, DOS_RATIO
 from glob_def import CarStatus
 from dbc_msg_conversion import DbcMsgConvertor
@@ -26,6 +26,7 @@ class Vehicle:
 
     dbc_data = None
     def __init__(self, model="unknown", speed=0.0):
+        self.model = model
         self.speed = speed
         self.enginespeed = Vehicle.min_engine_speed
         self.power = .0
@@ -40,7 +41,11 @@ class Vehicle:
         
         self.status = CarStatus.NORMAL
         self.hpmsg = 0
+        self.rlengine = 0
         self.driving_int =-1
+
+        # set random seed
+        seed(1)
         return
 
     def __get_gear_ratio(self):
@@ -73,10 +78,14 @@ class Vehicle:
 
         return gear_ratio
 
-    def __record_car_status(self, timestamp):
+    def __record_car_parameter(self, timestamp):
         self.speedometer.append([timestamp, self.speed])
         self.tachometer.append([timestamp, self.enginespeed])
         self.torquemeter.append([timestamp, self.torque])
+
+        # record car status
+        self.status_record.append([timestamp, self.status])
+
         return
 
     def __get_speed_loss_from_brake(self, value):
@@ -93,26 +102,38 @@ class Vehicle:
 
     def __no_driving_action(self):
         if self.speed == 0:
+            # nothing to do with car stopped
             return
 
-        road_force = (random()-0.7)
+        if self.status == CarStatus.ENGINE_SHUTDOWN:   
+            self.speed += self.speed*(-10)*Vehicle.speed_elapsing_factor
+            self.power = 0
+            self.enginespeed = 0
+            self.torque = 0
+        else:
+            road_force = (random()-0.7)
 
-        self.speed += self.speed*road_force*Vehicle.speed_elapsing_factor
-        if self.speed <= 0:
-            self.speed = self.enginespeed = self.power = self.torque = 0.0
-            return
+            self.speed += self.speed*road_force*Vehicle.speed_elapsing_factor
+            if self.speed <= 0:
+                self.speed = self.enginespeed = self.power = self.torque = 0.0
+                return
 
-        self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
-        self.__audit_engine_speed()
-        self.power += self.power*road_force*Vehicle.power_elapsing_factor
-        self.torque = self.power * 9550.0 / self.enginespeed
-        self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
+            self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
+            self.__audit_engine_speed()
+            self.power += self.power*road_force*Vehicle.power_elapsing_factor
+            self.torque = self.power * 9550.0 / self.enginespeed
+            self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
         return
 
+    def get_car_model(self):
+        return self.model
+
     def record_gas_pedal_action(self, timestamp, value):
-        # with engine speed exceeds upper bound, no fuel provided to engine
-        if self.enginespeed >= self.max_engine_speed:
-            self.__no_driving_action()
+        if self.status != CarStatus.NORMAL:
+            self.record_no_action(timestamp)
+        elif self.enginespeed >= self.max_engine_speed:
+            # with engine speed exceeds upper bound, no fuel provided to engine
+            self.record_no_action(timestamp)
         else:
             # 1. Calcuate torque by power and engine speed
             # 2. Calculate accelerating rate by torque and gear ratio
@@ -129,54 +150,80 @@ class Vehicle:
             self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
             self.__audit_engine_speed()
             self.accpower_record.append([timestamp, acce_power])
-
-        self.__record_car_status(timestamp)
         return
     
     def record_brake_pedal_action(self, timestamp, value):
-        speed_loss = self.__get_speed_loss_from_brake(value)
-        self.speed = (self.speed-speed_loss) if (self.speed > speed_loss) else 0.0
-        self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
-        self.__audit_engine_speed()
-        self.torque = self.power * 9550.0 / self.enginespeed
-        self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
-    
-        self.__record_car_status(timestamp)
-        self.braking_record.append([timestamp, value])
+        if self.status != CarStatus.NORMAL:
+            self.record_no_action(timestamp)
+        else:
+            speed_loss = self.__get_speed_loss_from_brake(value)
+            self.speed = (self.speed-speed_loss) if (self.speed > speed_loss) else 0.0
+            self.enginespeed = self.speed * self.__get_gear_ratio() * self.speed_to_enginespeed_ratio
+            self.__audit_engine_speed()
+            self.torque = self.power * 9550.0 / self.enginespeed
+            self.torque = Vehicle.max_torque if self.torque>Vehicle.max_torque else self.torque
+        
+            self.braking_record.append([timestamp, value])
+        return
 
     def query_vehicle_status(self):
         return self.speed, self.enginespeed, self.torque
 
     def record_no_action(self, timestamp):
         self.__no_driving_action()
-        self.__record_car_status(timestamp)
         return
+
+    def drive_car(self, event_list):
+        # generate regular query during driving
+        rt_event_list = []
+        last_query_time = -100
+        query_interval = 0.01 # query vehicle status every 10ms
+
+        for event in event_list:
+            self.drive_by_event(event)
+            
+            if event.timestamp-last_query_time > query_interval:
+                last_query_time = event.timestamp
+                speed, enginespeed, torque = self.query_vehicle_status()
+                rt_event_list.extend(generate_query_event(event.timestamp, speed, enginespeed, torque))
+        
+        return rt_event_list
 
     def drive_by_event(self, event:CarEvent):
         # reset timer
         if event.timestamp - self.driving_int >= 1.0:
             self.driving_int = int(event.timestamp)
-            if self.status != CarStatus.NORMAL and self.hpmsg<Vehicle.invalid_msg_threshold:
+            if self.status == CarStatus.DOS_DETECTED and self.hpmsg<Vehicle.invalid_msg_threshold:
+                # Vehicle status in 'DOS attacking' could be recovered
                 self.status = CarStatus.NORMAL
-            self.hpmsg = 0
+            elif self.status == CarStatus.ENGINE_SHUTDOWN:
+                pass
+            self.hpmsg = self.rlengine = 0
 
         # drive the car by event fed in
-        if event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
-            self.record_gas_pedal_action(event.timestamp, event.value)
-        elif event.ID == CarEvent.CAR_EVENT_BRAKE_PEDAL:
-            self.record_brake_pedal_action(event.timestamp, event.value)
-        elif event.ID == CarEvent.CAR_EVENT_FREE:
-            self.record_no_action(event.timestamp)
-        
-        # detect DOS attack
         if event.ID <= 0x10:
+            # detect DOS attack
             # count number of messages with high priority
             self.hpmsg += 1
             if self.status == CarStatus.NORMAL and self.hpmsg >= Vehicle.invalid_msg_threshold:
                 self.status = CarStatus.DOS_DETECTED
                 print("Car status changed: DOS attack detected at", event.timestamp)
-        # record car status
-        self.status_record.append([event.timestamp, self.status])
+        elif event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
+            self.record_gas_pedal_action(event.timestamp, event.value)
+        elif event.ID == CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE:
+            if event.value == 1:
+                # overwrought the engine until it is killed
+                self.rlengine += 1
+                if self.status == CarStatus.NORMAL and self.rlengine >= Vehicle.invalid_msg_threshold:
+                    self.status = CarStatus.ENGINE_SHUTDOWN
+                    print("Car status changed: engine killed !", event.timestamp)
+        elif event.ID == CarEvent.CAR_EVENT_BRAKE_PEDAL:
+            self.record_brake_pedal_action(event.timestamp, event.value)
+        elif event.ID == CarEvent.CAR_EVENT_FREE:
+            self.record_no_action(event.timestamp)
+
+        # record car parameters and status
+        self.__record_car_parameter(event.timestamp)      
         
     def get_speedometer_record(self):
         return self.speedometer
@@ -254,6 +301,15 @@ def generate_DOS_attack_via_odbII(start_time, stop_time):
     # generate invalude odb messages with ID ranging from 0 to 0x10 to hold the highest prioritized position
     dos_list = [CarEvent("DOS attack", timestamp=time, ID=randint(0,0x10), value=random()) for time in time_seq]
     return dos_list
+
+def toyota_prius_force_shutdown_engine(start_time, stop_time):
+    # the command applied to toyota prius, with two options:
+    # 1. diagnostic tests to kill the fuel of all cylinders to ICE
+    # 2. use 0x0037 CAN ID to redline the ICE and eventurally force the engine to shut down 
+    # Note: Option 2 can permanently damage the automobile. use caution
+    time_seq = get_event_timing_from_interval(start_time, stop_time, 1)
+    attack_list = [CarEvent("Shut down engine", timestamp=time, ID=CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE, value=1) for time in time_seq]
+    return attack_list
 
 def generate_empty_event(start_time, stop_time, event_list):
     full_time = range(int(start_time*1e3), int(stop_time*1e3))

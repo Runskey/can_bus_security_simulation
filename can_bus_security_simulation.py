@@ -4,7 +4,7 @@ import time
 
 from vehicle_model import Vehicle
 from vehicle_model import generate_constant_event, generate_sporadic_event, generate_empty_event, generate_query_event
-from vehicle_model import generate_DOS_attack_via_odbII
+from vehicle_model import generate_DOS_attack_via_odbII, toyota_prius_force_shutdown_engine
 
 from packet_proc import write_car_event_to_can_packet, write_car_event_to_udp_packet
 from packet_proc import read_car_event_from_udp_packet
@@ -45,14 +45,15 @@ def drive_the_car(car, event_list):
     return rt_event_list
 
 def main():
-    
 
     generate_car_data = 1
     analyze_car_data = 1
 
-    dos_attack = 1
+    attack_dos = 0
+    attack_kill_engine = 1
 
-    car = Vehicle("Toyota_prius")
+    car = Vehicle("Toyota_prius", speed=0.0)
+    #car = Vehicle("Toyota_prius", speed=80.0)
 
     if generate_car_data:
         #simulation_start = time.time()
@@ -79,19 +80,26 @@ def main():
         sort_event_by_timestamp(event_list)
 
         # generate DOS attack scenario
-        if dos_attack:
+        if attack_dos:
             attack_start_time = 15.0
             attack_stop_time = 16.0
             attack_list = generate_DOS_attack_via_odbII(attack_start_time, attack_stop_time)
             event_list.extend(attack_list)
             sort_event_by_timestamp(event_list)
 
+        if attack_kill_engine and car.get_car_model() == "Toyota_prius":
+            attack_start_time = 16.0
+            attack_stop_time = 17.0
+            attack_list = toyota_prius_force_shutdown_engine(attack_start_time, attack_stop_time)
+            event_list.extend(attack_list)
+            sort_event_by_timestamp(event_list)
+
         # drive the car with preset events, and generate more real-time events
-        rt_event_list = drive_the_car(car, event_list)
+        rt_event_list = car.drive_car(event_list)
+        #rt_event_list = drive_the_car(car, event_list)
         event_list.extend(rt_event_list)
         sort_event_by_timestamp(event_list)
 
-        #write_car_event_to_can_packet(car, event_list)
         write_car_event_to_udp_packet(car, event_list)
 
         # visualize the result
