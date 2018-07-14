@@ -1,6 +1,7 @@
 
 # Global variables
 from enum import Enum
+from time import time
 
 CAN_VERSION = '2.0B'
 CAN_DATA_RATE = 1e6 # CAN bus 2.0B data rate = 1Mbps
@@ -10,6 +11,8 @@ BUS_LOAD = 0.3
 ACCE_RATIO = 0.2
 BRAK_RATIO = 0.03
 DOS_RATIO = 0.9
+
+TIME_OFFSET = time()
 
 class CarStatus(Enum):
     NORMAL = 0

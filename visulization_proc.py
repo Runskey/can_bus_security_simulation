@@ -6,16 +6,48 @@ from matplotlib import pyplot as mplt
 from matplotlib import patheffects as mpe
 from matplotlib.patches import Circle, Wedge, Rectangle
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter  
+from matplotlib.animation import FuncAnimation
 #from matplotlib.axes import Axes
 
 def visual_setup():
-    mplt.ion()
+    #mplt.ion()
     return
 
 def visual_teardown():
-    mplt.ioff()
+    #mplt.ioff()
     mplt.show()
     return
+
+def update_line(num, data, line):
+    # step is 1ms
+    start_time = num*1e-3
+    end_time = num*1e-3+1.0
+    #print("from time", start_time, "to time", end_time)
+    data_seq = [d for d in data if start_time <= d[0] < end_time]
+    x_data = [d[0]-start_time for d in data_seq]
+    y_data = [d[1] for d in data_seq]
+    line.set_data(x_data, y_data)
+    return line,
+    
+def draw_timed_sequence_animation(data_list):
+    scr_dpi, style = 96, 'dark_background'
+    fig = mplt.figure(figsize=(300/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
+    mplt.style.use(style)
+
+    mplt.title("Speed (Kmph)", fontsize=10, fontweight=0, color='grey', loc='left')
+    mplt.xlabel('Time')
+    mplt.tick_params(labelbottom=False)
+    mplt.ylabel('Speed (Km/H)')
+    mplt.tick_params(labelleft=True)
+
+    #data = np.random.rand(2, 15)
+    l, = mplt.plot([],[])
+    mplt.xlim(0, 1)
+    mplt.ylim(-10, 180)
+    l.tick_params(labelbottom=False, labelleft=True)
+    
+    frames = int((data_list[-1][0]-1.0)*1e3)
+    return FuncAnimation(fig, update_line, frames, fargs=(data_list, l), interval=2, blit=True)
 
 def draw_timed_sequence(data_list, title, data_range):
     # customize figure properties
@@ -70,15 +102,7 @@ def draw_speedometer(speedometer_record):
     mplt.tick_params(labelbottom=True)
     #mplt.ylabel('Speed (Km/H)')
     mplt.tick_params(labelleft=True)
-
     return
-    # draw speedometer gauge
-    axes = mplt.subplot(gs[1])
-    draw_gauge(speedometer_record[-1][1], axes, labels=[str(i) for i in range(10, 180, 10)], colors='jet_r', title='Speedometer')
-    return
-
-    #gauge(speedometer_record, labels=['LOW','MEDIUM','HIGH','VERY HIGH','EXTREME'], colors='jet_r', arrow=1, title='Speedometer', fname=False)
-    #gauge(speedometer_record, labels=[str(i) for i in range(10, 180, 10)], colors='jet_r', title='Speedometer')
 
 def degree_range(n): 
     start = np.linspace(-45 ,225, n+1, endpoint=True)[0:-1]
