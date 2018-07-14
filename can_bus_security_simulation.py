@@ -131,33 +131,36 @@ def main():
             def update_line(num, data_src, lines):
                 # step is 1ms
                 start_time = num*1e-3
-                end_time = num*1e-3+1.0
+                end_time = num*1e-3+3.0
                 
                 for i in range(len(data_src)):
                     data_seq = [d for d in data_src[i] if start_time<=d[0]<end_time]
                     x_data = [d[0]-start_time for d in data_seq]
                     y_data = [d[1] for d in data_seq]
                     lines[i].set_data(x_data, y_data)
-                
+
                 return lines
 
             scr_dpi, style = 96, 'dark_background'
             fig = mplt.figure(figsize=(900/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
-            mplt.style.use(style)
+            #mplt.style.use(style)
             ax0, ax1, ax2 = mplt.subplot(1,3,1), mplt.subplot(1,3,2), mplt.subplot(1,3,3) 
 
-            ax0.set_xlim(0,1)
+            ax0.set_xlim(0,3)
             ax0.set_ylim(-10,180)
-            ax1.set_xlim(0,1)
+            ax0.set_title('Speed')
+            ax1.set_xlim(0,3)
             ax1.set_ylim(-10,6000)
-            ax2.set_xlim(0,1)
+            ax1.set_title('Engine Speed')
+            ax2.set_xlim(0,3)
             ax2.set_ylim(-10,260)
+            ax2.set_title('Torque')
 
             l1, = ax0.plot([],[])
             l2, = ax1.plot([],[])
             l3, = ax2.plot([],[])
 
-            frames = int((speed_record[-1][0]-1.0)*1e3)
+            frames = int((speed_record[-1][0]-3.0)*1e3)
             data_src = (speed_record, rpm_record, torque_record)
             lines = (l1,l2,l3)
             line_ani = FuncAnimation(fig, update_line, frames, fargs=(data_src, lines), interval=2, blit=True)
