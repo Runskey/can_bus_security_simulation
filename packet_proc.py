@@ -29,7 +29,7 @@ def write_car_event_to_can_packet(car:Vehicle, event_list:CarEvent):
         int(data[12:14],16), \
         int(data[14:],16)
 
-        can_payload = struct.pack('=8B', \
+        can_payload = struct.pack('<8B', \
         byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7)
         pkt = CAN(identifier=event.ID, length=len(data), data=can_payload)
         pkt.time = event.timestamp
@@ -80,7 +80,7 @@ def write_car_event_to_udp_packet(car:Vehicle, event_list:CarEvent, src_ip="192.
         udp_infoB = 0x05
         udp_datalen = car.dbc_data.get_msg_length_in_byte(event.ID)
 
-        udp_payload = struct.pack('=3I4B8B', \
+        udp_payload = struct.pack('<3I4B8B', \
         udp_time_upper32, \
         udp_time_lower32, \
         udp_identifier, \
@@ -117,7 +117,7 @@ def read_car_event_from_udp_packet(car:Vehicle) -> CarEvent :
         udp_identifier, \
         udp_type, udp_infoA, udp_infoB, udp_datalen, \
         byte0, byte1, byte2, byte3, byte4, byte5, byte6, byte7 \
-         = struct.unpack('=3I4B8B', udp_pkt.payload.original)
+         = struct.unpack('<3I4B8B', udp_pkt.payload.original)
 
         event_id = car.dbc_data.get_event_id_by_can_id(udp_identifier)
         if event_id == CarEvent.CAR_EVENT_UNKNOWN:

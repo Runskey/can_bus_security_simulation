@@ -48,7 +48,7 @@ def drive_the_car(car, event_list):
 
 def main():
 
-    generate_car_data = 0
+    generate_car_data = 1
     analyze_car_data = 1
     show_animaiton = 1
 

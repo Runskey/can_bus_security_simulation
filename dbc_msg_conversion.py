@@ -39,7 +39,7 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
             SimpleMsg(can_id=0x24, byte_len=8,         \
                        bit_start_pos=15, bit_num=16,      \
                        scale=1.0, offset=0.0,          \
-                       desc="ICE RPM", unit=""),          \
+                       desc="ICE Torque", unit=""),          \
     CarEvent.CAR_EVENT_BRAKE_PEDAL:  \
             SimpleMsg(can_id=0x0224, byte_len=8,         \
                        bit_start_pos=47, bit_num=16,      \
