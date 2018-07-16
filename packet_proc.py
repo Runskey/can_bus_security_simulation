@@ -132,7 +132,7 @@ def read_car_event_from_udp_packet(car:Vehicle) -> CarEvent :
         event_out.append(CarEvent(desc="", timestamp=event_time, ID=event_id, value=event_value))
 
     return event_out
-
+  
 if __name__ == '__main__':
     pass
 #    data = struct.pack('=BHI', 0x12, 20, 1000)

@@ -60,11 +60,6 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
                        bit_start_pos=15, bit_num=16,      \
                        scale=0.0062, offset=0,            \
                        desc="Acceleration pedal position", unit="mph"), \
-    CarEvent.CAR_EVENT_GAS_PEDAL:  \
-            SimpleMsg(can_id=0x0245, byte_len=5,         \
-                       bit_start_pos=15, bit_num=16,      \
-                       scale=0.0062, offset=0,            \
-                       desc="Acceleration pedal position", unit="mph"), \
     CarEvent.CAR_EVENT_PCS_PRECOLLISION:  \
             SimpleMsg(can_id=0x0283, byte_len=7,         \
                        bit_start_pos=16, bit_num=24,      \
