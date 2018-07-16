@@ -33,7 +33,7 @@ local DBC_DATABASE = {
         [0x07df] = {['bytelen']=8, ['bit_start']=15, ['bit_num']=16, ['scale']=1.0, ['offset']=0.0}
 }
 
-local f_canid = ProtoField.uint32("canou.canid", "CAN Message Name", base.DEC, canid_set)
+local f_canid = ProtoField.uint32("canou.canid", "CAN Message Name", base.HEX, canid_set)
 local f_canlen = ProtoField.uint8("canou.msglen", "Length of Byte", base.DEC)
 local f_canval = ProtoField.uint32("canou.msgval", "Value", base.DEC)
 local f_canmsg = ProtoField.string("canou.text", "Addi. Info")
