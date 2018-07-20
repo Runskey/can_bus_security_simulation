@@ -10,14 +10,15 @@ from matplotlib.animation import FuncAnimation
 #from matplotlib.axes import Axes
 
 def visual_setup():
-    #mplt.ion()
+    mplt.ion()
     return
 
 def visual_teardown():
-    #mplt.ioff()
+    mplt.ioff()
     mplt.show()
     return
 
+'''
 def update_line(num, data, line):
     # step is 1ms
     start_time = num*1e-3
@@ -30,7 +31,7 @@ def update_line(num, data, line):
     return line,
     
 def draw_timed_sequence_animation(data_list):
-    scr_dpi, style = 96, 'dark_background'
+    scr_dpi, style = 96, 'seaborn-white'
     fig = mplt.figure(figsize=(300/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
     mplt.style.use(style)
 
@@ -48,10 +49,59 @@ def draw_timed_sequence_animation(data_list):
     
     frames = int((data_list[-1][0]-1.0)*1e3)
     return FuncAnimation(fig, update_line, frames, fargs=(data_list, l), interval=2, blit=True)
+'''
+
+def update_line(num, data_src, lines):
+    # step is 1ms
+    start_time = num*1e-3
+    end_time = num*1e-3+3.0
+
+    for i in range(len(data_src)):
+        data_seq = [d for d in data_src[i] if start_time<=d[0]<end_time]
+        x_data = [d[0]-start_time for d in data_seq]
+        y_data = [d[1] for d in data_seq]
+        lines[i].set_data(x_data, y_data)
+        #lines[i].set_color('red')
+
+    return lines
+
+def draw_animation(data_src):
+    scr_dpi, style = 96, 'seaborn-white'
+    fig = mplt.figure(figsize=(900/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
+    #mplt.style.use(style)
+    ax0, ax1, ax2 = mplt.subplot(1,3,1), mplt.subplot(1,3,2), mplt.subplot(1,3,3) 
+
+    ax0.set_xlim(0,3)
+    ax0.set_ylim(-10,180)
+    ax0.set_title('Speed [kmph]', fontsize=10, fontweight=0, color='grey', loc='left')
+    ax0.grid(True)
+
+    ax1.set_xlim(0,3)
+    ax1.set_ylim(-10,6000)
+    ax1.set_title('Engine Speed [RPM]', fontsize=10, fontweight=0, color='grey', loc='left')
+    ax1.grid(True)
+
+    ax2.set_xlim(0,3)
+    ax2.set_ylim(-10,260)
+    ax2.set_title('Torque [N-m]', fontsize=10, fontweight=0, color='grey', loc='left')
+    #ax2.spines['top'].set_color('red')
+    #ax2.spines['right'].set_visible(False)
+    ax2.grid(True)
+
+    path_eff = [mpe.SimpleLineShadow(shadow_color='b'), mpe.Normal()]
+    l1, = ax0.plot([],[], color='mediumvioletred', linewidth=3, path_effects=path_eff)
+    l2, = ax1.plot([],[], color='mediumvioletred', linewidth=3, path_effects=path_eff)
+    l3, = ax2.plot([],[], color='mediumvioletred', linewidth=3, path_effects=path_eff)
+
+    data_samp = data_src[0]
+    frames = int((data_samp[-1][0]-3.0)*1e3)
+
+    lines = (l1,l2,l3)
+    return FuncAnimation(fig, update_line, frames, fargs=(data_src, lines), interval=1, blit=True)
 
 def draw_timed_sequence(data_list, title, data_range):
     # customize figure properties
-    scr_dpi, style = 96, 'seaborn-darkgrid'
+    scr_dpi, style = 96, 'seaborn-white'
     mplt.figure(figsize=(800/scr_dpi, 300/scr_dpi), dpi=scr_dpi)
     mplt.style.use(style)
 
@@ -59,10 +109,11 @@ def draw_timed_sequence(data_list, title, data_range):
     time_seq = [i[0] for i in data_list]
     data_seq = [i[1] for i in data_list]
     mplt.plot(time_seq, data_seq, marker='', color='mediumvioletred', \
-                linewidth=2, alpha=1, \
+                linewidth=3, alpha=1, \
                 path_effects=[mpe.SimpleLineShadow(shadow_color='b'), mpe.Normal()])
 
     mplt.title(title, fontsize=10, fontweight=0, color='grey', loc='left')
+    mplt.grid(True)
 
     # set x-axis properties
     xmajorLocator   = MultipleLocator(2)
