@@ -1,5 +1,6 @@
 from glob_def import CarEvent
 
+
 class SimpleMsg:
     can_id = 0
     desc = ""
@@ -9,6 +10,7 @@ class SimpleMsg:
     scale = 0.0
     offset = 0.0
     unit = ""
+    
     def __init__(self, can_id, byte_len, bit_start_pos, bit_num, scale, offset, desc = "", unit=""):
         self.can_id = can_id
         self.byte_len = byte_len
@@ -37,9 +39,9 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
                        desc="ICE RPM", unit=""),          \
     CarEvent.CAR_EVENT_QUERY_TORQUE:  \
             SimpleMsg(can_id=0x24, byte_len=8,         \
-                       bit_start_pos=15, bit_num=16,      \
+                       bit_start_pos=15, bit_num=16,   \
                        scale=1.0, offset=0.0,          \
-                       desc="ICE Torque", unit=""),          \
+                       desc="ICE Torque", unit=""),    \
     CarEvent.CAR_EVENT_BRAKE_PEDAL:  \
             SimpleMsg(can_id=0x0224, byte_len=8,         \
                        bit_start_pos=47, bit_num=16,      \
