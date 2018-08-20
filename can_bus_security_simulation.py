@@ -1,5 +1,6 @@
 import sys
 import struct
+import configparser
 
 from vehicle_model import Vehicle
 from vehicle_model import generate_constant_event, generate_sporadic_event, generate_empty_event, generate_query_event
@@ -10,12 +11,13 @@ from packet_proc import read_car_event_from_udp_packet
 
 from visulization_proc import draw_timed_sequence, draw_animation
 from visulization_proc import visual_setup, visual_teardown
-from glob_def import CarEvent
+from glob_def import CarEvent, AttackModel
 
 from matplotlib import pyplot as mplt
 from matplotlib.animation import FuncAnimation
 from matplotlib import patheffects
 import numpy as np
+
 
 def sort_event_by_timestamp(event_list):
     def customer_key(event):
@@ -24,12 +26,12 @@ def sort_event_by_timestamp(event_list):
     event_list.sort(key=customer_key)
     return
 
-def drive_the_car(car, event_list):
 
+def drive_the_car(car, event_list):
     # generate regular query during driving
     rt_event_list = []
     last_query_time = -100
-    query_interval = 0.01 # query vehicle status every 10ms
+    query_interval = 0.01  # query vehicle status every 10ms
 
     for event in event_list:
         
@@ -44,10 +46,61 @@ def drive_the_car(car, event_list):
             last_query_time = event.timestamp
             speed, enginespeed, torque = car.query_vehicle_status()
             rt_event_list.extend(generate_query_event(event.timestamp, speed, enginespeed, torque))
-    
+
     return rt_event_list
 
+
+def read_attack_config():
+    attack_list = []
+    conf = configparser.ConfigParser()
+    conf.read("attack_conf.txt")
+    attack_scenarios = conf.sections()
+
+    for attack in attack_scenarios:
+        attack_model = AttackModel()
+        type = conf.get(attack, "attack_type").lower()
+        if "ddos" in type:
+            attack_model.type = "ddos"
+        elif "reverse" in type:
+            attack_model.type = 'reverse_gas'
+
+        strength = conf.get(attack, "strength").lower()
+        attack_model.strength = strength
+
+        condition = conf.get(attack, "condition").lower()
+        for subcondition in condition.split(' and '):
+            if "gearshift" in subcondition:
+                attack_model.is_gearshift_check = True
+                if "reverse" in subcondition:
+                    attack_model.gearshift = "reverse"
+                elif "drive" in subcondition:
+                    attack_model.gearshift = "drive"
+
+            if "speed" in subcondition:
+                attack_model.is_speed_check = True
+                speed_range = subcondition.split('<')
+                if len(speed_range) == 3:
+                    # extract both low and high value of speed range
+                    attack_model.speed_low = int(speed_range[0].replace('kmph', ''))
+                    attack_model.speed_high = int(speed_range[2].replace('kmph', ''))
+                elif len(speed_range) == 2:
+                    # extract only high value of speed
+                    attack_model.speed_high = int(speed_range[1].replace('kmph', ''))
+                else:
+                    speed_range = subcondition.split('>')
+                    attack_model.speed_low = int(speed_range[1].replace('kmph', ''))
+        attack_list.append(attack_model)
+    return attack_list
+
+
 def main():
+
+    '''
+    attack_list = read_attack_config()
+    print(f"There are {len(attack_list)} attacks established:")
+    for attack in attack_list:
+        print("    ", attack)
+    '''
 
     generate_car_data = 0
     analyze_car_data = 1
@@ -117,15 +170,18 @@ def main():
     if analyze_car_data:
         event_out = read_car_event_from_udp_packet(car)
 
-        speed_record = [[i.timestamp, i.value] for i in event_out if i.ID == CarEvent.CAR_EVENT_QUERY_SPEED]
-        rpm_record = [[i.timestamp, i.value] for i in event_out if i.ID == CarEvent.CAR_EVENT_QUERY_RPM]
-        torque_record = [[i.timestamp, i.value] for i in event_out if i.ID == CarEvent.CAR_EVENT_QUERY_TORQUE]
+        speed_record = [[i.timestamp, i.value] for i in event_out
+                        if i.ID == CarEvent.CAR_EVENT_QUERY_SPEED]
+        rpm_record = [[i.timestamp, i.value] for i in event_out
+                      if i.ID == CarEvent.CAR_EVENT_QUERY_RPM]
+        torque_record = [[i.timestamp, i.value] for i in event_out
+                         if i.ID == CarEvent.CAR_EVENT_QUERY_TORQUE]
 
         visual_setup()
         draw_timed_sequence(speed_record, "Retrived speed [kmph])", (-10, 180))
         #draw_timed_sequence(rpm_record, "Retrived Engine Speed [RPM])", (-10, 6000))
         #draw_timed_sequence(torque_record, "Retrived Torque [N-m])", (-10, 260))
-        
+
         '''
         show animaiton of observed parameters
         '''
@@ -136,6 +192,7 @@ def main():
         visual_teardown()
 
     return
+
 
 if __name__ == '__main__':
     main()

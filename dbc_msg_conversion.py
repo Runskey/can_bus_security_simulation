@@ -11,7 +11,8 @@ class SimpleMsg:
     offset = 0.0
     unit = ""
 
-    def __init__(self, can_id, byte_len, bit_start_pos, bit_num, scale, offset, desc = "", unit=""):
+    def __init__(self, can_id, byte_len, bit_start_pos, bit_num,
+                 scale, offset, desc="", unit=""):
         self.can_id = can_id
         self.byte_len = byte_len
         self.bit_start_pos = bit_start_pos
@@ -33,51 +34,51 @@ DBC_DATABASE_TOYOTA_PRIUS = {
               bit_start_pos=47, bit_num=16,
               scale=0.01, offset=0.0,
               desc="Current speed of the automobile", unit="kmph"),
-    CarEvent.CAR_EVENT_QUERY_RPM:  \
-            SimpleMsg(can_id=0x01c4, byte_len=8,         \
-                       bit_start_pos=15, bit_num=16,      \
-                       scale=1.0, offset=-400.0,          \
-                       desc="ICE RPM", unit=""),          \
-    CarEvent.CAR_EVENT_QUERY_TORQUE:  \
-            SimpleMsg(can_id=0x24, byte_len=8,         \
-                       bit_start_pos=15, bit_num=16,   \
-                       scale=1.0, offset=0.0,          \
-                       desc="ICE Torque", unit=""),    \
-    CarEvent.CAR_EVENT_BRAKE_PEDAL:  \
-            SimpleMsg(can_id=0x0224, byte_len=8,         \
-                       bit_start_pos=47, bit_num=16,      \
-                       scale=0.01, offset=0.0,            \
-                       desc="Brake pedal position sensor", unit=""), \
-    CarEvent.CAR_EVENT_STEERING_WHEEL_ANGLE: \
-            SimpleMsg(can_id=0x25, byte_len=8, \
-                       bit_start_pos=3, bit_num=12,    \
-                       scale=1.5, offset=0.0,  \
-                       desc="Steer wheel angle", unit="deg"), \
+    CarEvent.CAR_EVENT_QUERY_RPM:
+    SimpleMsg(can_id=0x01c4, byte_len=8,
+              bit_start_pos=15, bit_num=16,
+              scale=1.0, offset=-400.0,
+              desc="ICE RPM", unit=""),
+    CarEvent.CAR_EVENT_QUERY_TORQUE:
+    SimpleMsg(can_id=0x24, byte_len=8,
+              bit_start_pos=15, bit_num=16,
+              scale=1.0, offset=0.0,
+              desc="ICE Torque", unit=""),
+    CarEvent.CAR_EVENT_BRAKE_PEDAL:
+    SimpleMsg(can_id=0x0224, byte_len=8,
+              bit_start_pos=47, bit_num=16,
+              scale=0.01, offset=0.0,
+              desc="Brake pedal position sensor", unit=""),
+    CarEvent.CAR_EVENT_STEERING_WHEEL_ANGLE:
+    SimpleMsg(can_id=0x25, byte_len=8,
+              bit_start_pos=3, bit_num=12,
+              scale=1.5, offset=0.0,
+              desc="Steer wheel angle", unit="deg"),
     CarEvent.CAR_EVENT_BROADCAST_GEAR_STATUS:
     SimpleMsg(can_id=0x127, byte_len=8,
               bit_start_pos=0, bit_num=64,
               scale=1.0, offset=0.0,
-              desc="Broadcast gear status", unit="")
-    CarEvent.CAR_EVENT_BRAKE_SENSOR:  \
-            SimpleMsg(can_id=0x0230, byte_len=7,         \
-                       bit_start_pos=31, bit_num=8,       \
-                       scale=1.0, offset=0.0,             \
-                       desc="Brake sensor", unit=""),     \
-    CarEvent.CAR_EVENT_GAS_PEDAL:  \
-            SimpleMsg(can_id=0x0245, byte_len=5,         \
-                       bit_start_pos=15, bit_num=16,      \
-                       scale=0.0062, offset=0,            \
-                       desc="Acceleration pedal position", unit="mph"), \
-    CarEvent.CAR_EVENT_PCS_PRECOLLISION:  \
-            SimpleMsg(can_id=0x0283, byte_len=7,         \
-                       bit_start_pos=16, bit_num=24,      \
-                       scale=1.0, offset=0.0,            \
-                       desc="Pre-collision action", unit=""), \
-    CarEvent.CAR_EVENT_BUS_DIAG:  \
-            SimpleMsg(  can_id=0x7df, byte_len=8, \
-                        bit_start_pos=15, bit_num=16, \
-                        scale=1.0, offset=0, \
-                        desc="Universal diagnostic message", unit="") \
+              desc="Broadcast gear status", unit=""),
+    CarEvent.CAR_EVENT_BRAKE_SENSOR:
+    SimpleMsg(can_id=0x0230, byte_len=7,
+              bit_start_pos=31, bit_num=8,
+              scale=1.0, offset=0.0,
+              desc="Brake sensor", unit=""),
+    CarEvent.CAR_EVENT_GAS_PEDAL:
+    SimpleMsg(can_id=0x0245, byte_len=5,
+              bit_start_pos=15, bit_num=16,
+              scale=0.0062, offset=0,
+              desc="Acceleration pedal position", unit="mph"),
+    CarEvent.CAR_EVENT_PCS_PRECOLLISION:
+    SimpleMsg(can_id=0x0283, byte_len=7,
+              bit_start_pos=16, bit_num=24,
+              scale=1.0, offset=0.0,
+              desc="Pre-collision action", unit=""),
+    CarEvent.CAR_EVENT_BUS_DIAG:
+    SimpleMsg(can_id=0x7df, byte_len=8,
+              bit_start_pos=15, bit_num=16,
+              scale=1.0, offset=0,
+              desc="Universal diagnostic message", unit="")
 }
 
 
@@ -102,14 +103,15 @@ class DbcMsgConvertor:
         if id in self.dbc_database:
             msg = self.dbc_database[id]
         else:
-            msg = SimpleMsg(can_id=id, byte_len=8, bit_start_pos=16, bit_num=4, scale=1.0, offset=0.0)
+            msg = SimpleMsg(can_id=id, byte_len=8, bit_start_pos=16,
+                            bit_num=4, scale=1.0, offset=0.0)
 
         binstr = '0' * msg.byte_len * 8
 
         # convert value to binary
         binfmt = '0'+str(msg.bit_num)+'b'
         data_value = format(int((value-msg.offset)/msg.scale), binfmt)
-        assert(len(data_value)<=msg.bit_num)
+        assert(len(data_value) <= msg.bit_num)
 
         # combine binary string
         postzeronum = msg.byte_len*8-msg.bit_start_pos-msg.bit_num
@@ -125,7 +127,8 @@ class DbcMsgConvertor:
         if id in self.dbc_database:
             msg = self.dbc_database[id]
         else:
-            msg = SimpleMsg(can_id=id, byte_len=8, bit_start_pos=16, bit_num=4, scale=1.0, offset=0.0)
+            msg = SimpleMsg(can_id=id, byte_len=8, bit_start_pos=16,
+                            bit_num=4, scale=1.0, offset=0.0)
 
         bin_str = format(int(data, 16), '064b')
         bin_value = bin_str[msg.bit_start_pos:msg.bit_start_pos+msg.bit_num]

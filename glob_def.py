@@ -29,6 +29,24 @@ class GearShiftStatus(Enum):
     ENGINEER_BRAKE = 4
 
 
+class AttackModel:
+    def __init__(self):
+        self.type = 'unknown'
+        self.is_gearshift_check = False
+        self.is_speed_check = False
+        self.speed_low = -1
+        self.speed_high = -1
+
+    def __str__(self):
+        str_info = f"\
+Type: {self.type}; \
+Speed_set:{self.is_speed_check}; \
+Gear_set:{self.is_gearshift_check}; \
+Speed_low:{self.speed_low}; \
+Speed_hight:{self.speed_high}"
+        return str_info
+
+
 # class definition
 class CarEvent:
     # car event definition
@@ -38,6 +56,7 @@ class CarEvent:
     CAR_EVENT_BRAKE_SENSOR = 0x103
     CAR_EVENT_GAS_ACC_VIA_ICE = 0x110
 
+    CAR_EVENT_BROADCAST_GEAR_STATUS = 0x202
     CAR_EVENT_BUS_DIAG = 0x203
 
     CAR_EVENT_QUERY_RPM = 0x301
@@ -54,7 +73,7 @@ class CarEvent:
     ID = 0
     value = 0
 
-    def __init__(self, desc="Invalid", timestamp=0, ID=-1, value = -1):
+    def __init__(self, desc="Invalid", timestamp=0, ID=-1, value=-1):
         self.timestamp = timestamp
         self.desc = desc
         self.ID = ID

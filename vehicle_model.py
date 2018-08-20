@@ -144,7 +144,7 @@ class Vehicle:
     def set_gear_shift(self, gearShift):
         self.gearshift = gearShift
         return
-    
+
     def get_gear_shift(self):
         return self.gearshift
 
