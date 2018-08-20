@@ -4,8 +4,8 @@ from enum import Enum
 from time import time
 
 CAN_VERSION = '2.0B'
-CAN_DATA_RATE = 1e6 # CAN bus 2.0B data rate = 1Mbps
-CAN_FRAME_LEN = 128 # Exten
+CAN_DATA_RATE = 1e6  # CAN bus 2.0B data rate = 1Mbps
+CAN_FRAME_LEN = 128  # Exten
 BUS_LOAD = 0.3
 
 ACCE_RATIO = 0.2
@@ -14,10 +14,20 @@ DOS_RATIO = 0.9
 
 TIME_OFFSET = time()
 
+
 class CarStatus(Enum):
     NORMAL = 0
     DOS_DETECTED = 1
     ENGINE_SHUTDOWN = 2
+
+
+class GearShiftStatus(Enum):
+    PARK = 0
+    REVERSE = 1
+    NEUTRAL = 2
+    DRIVE = 3
+    ENGINEER_BRAKE = 4
+
 
 # class definition
 class CarEvent:

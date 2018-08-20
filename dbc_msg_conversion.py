@@ -10,7 +10,7 @@ class SimpleMsg:
     scale = 0.0
     offset = 0.0
     unit = ""
-    
+
     def __init__(self, can_id, byte_len, bit_start_pos, bit_num, scale, offset, desc = "", unit=""):
         self.can_id = can_id
         self.byte_len = byte_len
@@ -21,17 +21,18 @@ class SimpleMsg:
         self.desc = desc
         self.unit = unit
 
-DBC_DATABASE_TOYOTA_PRIUS = { \
-    CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE: \
-            SimpleMsg(can_id=0x37, byte_len=7,           \
-                       bit_start_pos=0, bit_num=40,      \
-                       scale=1.0, offset=0.0,            \
-                       desc="Acceleration via ICE", unit=""), \
-    CarEvent.CAR_EVENT_QUERY_SPEED: \
-            SimpleMsg(can_id=0xb4, byte_len=8,           \
-                       bit_start_pos=47, bit_num=16,      \
-                       scale=0.01, offset=0.0,            \
-                       desc="Current speed of the automobile", unit="kmph"), \
+
+DBC_DATABASE_TOYOTA_PRIUS = {
+    CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE:
+    SimpleMsg(can_id=0x37, byte_len=7,
+              bit_start_pos=0, bit_num=40,
+              scale=1.0, offset=0.0,
+              desc="Acceleration via ICE", unit=""),
+    CarEvent.CAR_EVENT_QUERY_SPEED:
+    SimpleMsg(can_id=0xb4, byte_len=8,
+              bit_start_pos=47, bit_num=16,
+              scale=0.01, offset=0.0,
+              desc="Current speed of the automobile", unit="kmph"),
     CarEvent.CAR_EVENT_QUERY_RPM:  \
             SimpleMsg(can_id=0x01c4, byte_len=8,         \
                        bit_start_pos=15, bit_num=16,      \
@@ -52,6 +53,11 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
                        bit_start_pos=3, bit_num=12,    \
                        scale=1.5, offset=0.0,  \
                        desc="Steer wheel angle", unit="deg"), \
+    CarEvent.CAR_EVENT_BROADCAST_GEAR_STATUS:
+    SimpleMsg(can_id=0x127, byte_len=8,
+              bit_start_pos=0, bit_num=64,
+              scale=1.0, offset=0.0,
+              desc="Broadcast gear status", unit="")
     CarEvent.CAR_EVENT_BRAKE_SENSOR:  \
             SimpleMsg(can_id=0x0230, byte_len=7,         \
                        bit_start_pos=31, bit_num=8,       \
@@ -74,9 +80,11 @@ DBC_DATABASE_TOYOTA_PRIUS = { \
                         desc="Universal diagnostic message", unit="") \
 }
 
+
 class DbcMsgConvertor:
     vehicle_model = "unknown"
     dbc_database = None
+
     def __init__(self, model):
         self.vehicle_model = model
         database_name = "DBC_DATABASE_" + str(model).upper()
@@ -109,7 +117,7 @@ class DbcMsgConvertor:
 
         # convert binary to hex
         hexfmt = '0'+str(msg.byte_len*2)+'x'
-        hexstr = format(int(binstr,2), hexfmt)
+        hexstr = format(int(binstr, 2), hexfmt)
 
         return hexstr
 

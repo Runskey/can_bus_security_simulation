@@ -57,7 +57,7 @@ def write_car_event_to_udp_packet(car:Vehicle, event_list:CarEvent, src_ip="192.
             continue
         if event.ID == CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE:
             # pre-process the message value
-            event.value = (0x58<<16) + event.value*0xFFFF
+            event.value = (0x58 << 16) + event.value*0xFFFF
 
         data = car.dbc_data.simple_msg_encode(event.ID, event.value)
         # convert data into 8 bytes

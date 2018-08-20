@@ -48,6 +48,7 @@ class Vehicle:
         self.accpower_record = []
         self.status_record = []
 
+        self.gearshift = GearShiftStatus.PARK
         self.status = CarStatus.NORMAL
         self.hpmsg = 0
         self.rlengine = 0
@@ -140,6 +141,13 @@ class Vehicle:
     def get_car_model(self):
         return self.model
 
+    def set_gear_shift(self, gearShift):
+        self.gearshift = gearShift
+        return
+    
+    def get_gear_shift(self):
+        return self.gearshift
+
     def record_gas_pedal_action(self, timestamp, value):
         if self.status != CarStatus.NORMAL:
             self.record_no_action(timestamp)
@@ -199,7 +207,7 @@ class Vehicle:
         query_interval = 0.01  # query vehicle status every 10ms
 
         for event in event_list:
-            self.drive_by_event(event)
+            self.__drive_by_event(event)
 
             if event.timestamp-last_query_time > query_interval:
                 last_query_time = event.timestamp
@@ -209,7 +217,7 @@ class Vehicle:
 
         return rt_event_list
 
-    def drive_by_event(self, event: CarEvent):
+    def __drive_by_event(self, event: CarEvent):
         # reset timer
         if event.timestamp - self.driving_int >= 1.0:
             self.driving_int = int(event.timestamp)

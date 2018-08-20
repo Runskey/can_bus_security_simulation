@@ -57,23 +57,24 @@ def main():
     attack_kill_engine = 1
 
     car = Vehicle("Toyota_prius", speed=0.0)
-    #car = Vehicle("Toyota_prius", speed=80.0)
+    # car = Vehicle("Toyota_prius", speed=80.0)
 
     if generate_car_data:
-        #simulation_start = time.time()
+        # simulation_start = time.time()
         sim_start = 0
-        sim_time = 20 # simulation time, unit of second
+        sim_time = 20  # simulation time, unit of second
         event_list = []
 
         # generate constant events for every second
-        for i in range(sim_time):        
-            acceleration = 1 if i<7 or 12<=i<16  else 0
-            const_event = generate_constant_event(sim_start+i, sim_start+i+1, acceleration)
+        for i in range(sim_time):    
+            acceleration = 1 if i < 7 or 12 <= i < 16 else 0
+            const_event = generate_constant_event(
+                sim_start+i, sim_start+i+1, acceleration)
             event_list.extend(const_event)
 
         # generate braking events only on sparodic timing points
         for i in range(sim_time):
-            brake = 1 if 10<=i<11 or 17<=i<18 else 0
+            brake = 1 if (10 <= i < 11) or (17 <= i < 18) else 0
             sparodic_event = generate_sporadic_event(sim_start+i, sim_start+i+1, brake)
             event_list.extend(sparodic_event)
 
