@@ -63,6 +63,8 @@ def write_car_event_to_udp_packet(car: Vehicle,
     for event in event_list:
         if event.ID == CarEvent.CAR_EVENT_FREE:
             continue
+        if event.ID == CarEvent.CAR_EVENT_BROADCAST_GEAR_STATUS:
+            continue
         if event.ID == CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE:
             # pre-process the message value
             event.value = (0x58 << 16) + event.value*0xFFFF

@@ -14,6 +14,10 @@ DOS_RATIO = 0.9
 
 TIME_OFFSET = time()
 
+ATTACK_TYPE_DDOS = 0
+ATTACK_TYPE_REVERSE_GAS = 1
+ATTACK_TYPE_KILL_ENGINE = 2
+
 
 class CarStatus(Enum):
     NORMAL = 0
@@ -35,7 +39,7 @@ class AttackModel:
         self.is_gearshift_check = False
         self.is_speed_check = False
         self.speed_low = -1
-        self.speed_high = -1
+        self.speed_high = 1e3
 
     def __str__(self):
         str_info = f"\

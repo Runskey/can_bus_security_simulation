@@ -1,10 +1,15 @@
-[DDOS Attack]
-attack_type: ddos attack
+# [DDOS Attack]
+# attack_type: ddos attack
 # strength: low, medium, high, severe
-strength: medium
-condition: speed > 60 kmph
+# strength: medium
+# condition: speed > 60 kmph
 
-[Illigel Fuelling Attack]
-attack_type: uncontrolled gas pedal under reverse gearshift
-strength: high
-condition: reverse gearshift
+# [Illegal Fuelling Attack]
+# attack_type: uncontrolled gas pedal under reverse gearshift
+# strength: high
+# condition: reverse gearshift
+
+[Kill Engine]
+attack_type: kill engine with high vehicle
+strength: severe
+condition: speed > 10 kmph

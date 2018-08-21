@@ -1,7 +1,9 @@
 
 from random import seed, random, sample, expovariate, randint
-from glob_def import CarEvent, CarStatus, CAN_DATA_RATE, CAN_FRAME_LEN
+from glob_def import CarEvent, CarStatus, GearShiftStatus
+from glob_def import CAN_DATA_RATE, CAN_FRAME_LEN
 from glob_def import BUS_LOAD, ACCE_RATIO, BRAK_RATIO, DOS_RATIO
+from glob_def import ATTACK_TYPE_DDOS, ATTACK_TYPE_REVERSE_GAS, ATTACK_TYPE_KILL_ENGINE
 from dbc_msg_conversion import DbcMsgConvertor
 from math import exp
 
@@ -50,6 +52,7 @@ class Vehicle:
 
         self.gearshift = GearShiftStatus.PARK
         self.status = CarStatus.NORMAL
+        self.is_attack_registered = False
         self.hpmsg = 0
         self.rlengine = 0
         self.driving_int = -1
@@ -110,6 +113,13 @@ class Vehicle:
         if self.enginespeed < self.min_engine_speed:
             self.enginespeed = self.min_engine_speed
         return
+
+    def register_attack_model(self, attack_model):
+        self.is_attack_registered = True
+        self.attack_model = attack_model
+
+    def deregister_attack_model(self):
+        self.is_attack_registered = False
 
     def __no_driving_action(self):
         if self.speed == 0:
@@ -200,6 +210,48 @@ class Vehicle:
         self.__no_driving_action()
         return
 
+    def __is_attacked(self, timestamp):
+        if (self.is_attack_registered):
+            attack = self.attack_model
+            if attack.is_gearshift_check and (self.gearshift ==
+                                              GearShiftStatus.REVERSE):
+                if attack.is_speed_check:
+                    return (attack.speed_low < self.speed < attack.speed_high)
+                else:
+                    return True
+            if attack.is_speed_check and (attack.speed_low < self.speed
+                                          < attack.speed_high):
+                if attack.is_gearshift_check:
+                    return (self.gearshift == GearShiftStatus.REVERSE)
+                else:
+                    return True
+        return False
+
+    def __try_to_generate_attack_event(self, timestamp):
+        attack = self.attack_model
+        if attack.strength == "low":
+            strength = 0.8
+        elif attack.strength == "medium":
+            strength = 0.5
+        elif attack.strength == "high":
+            strength = 0.3
+        elif attack.strength == "severe":
+            strength = 0.1
+
+        if random() < strength:
+            return None
+
+        if attack.type == ATTACK_TYPE_DDOS:
+            return CarEvent("DOS attack", timestamp=timestamp,
+                            ID=randint(0, 0x10), value=random())
+        elif attack.type == ATTACK_TYPE_REVERSE_GAS:
+            return None
+        elif attack.type == ATTACK_TYPE_KILL_ENGINE:
+            return CarEvent("Shut down engine", timestamp=timestamp,
+                            ID=CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE, value=1)
+        else:
+            return None
+
     def drive_car(self, event_list):
         # generate regular query during driving
         rt_event_list = []
@@ -207,8 +259,21 @@ class Vehicle:
         query_interval = 0.01  # query vehicle status every 10ms
 
         for event in event_list:
+            # fetch a event from the list
+
+            # check attack model, if the condition is met then attack event
+            # is inserted
+            if self.__is_attacked(event.timestamp):
+                attack_event = self.__try_to_generate_attack_event(event.timestamp)
+                if attack_event:
+                    # print(f"Inject an attacking packet at time {event.timestamp}")
+                    rt_event_list.append(attack_event)
+                    self.__drive_by_event(attack_event)
+
+            # drive the car by event
             self.__drive_by_event(event)
 
+            # query car status
             if event.timestamp-last_query_time > query_interval:
                 last_query_time = event.timestamp
                 speed, enginespeed, torque = self.query_vehicle_status()
@@ -239,6 +304,8 @@ class Vehicle:
                 self.status = CarStatus.DOS_DETECTED
                 print("Car status changed: DOS attack detected at",
                       event.timestamp)
+        elif event.ID == CarEvent.CAR_EVENT_BROADCAST_GEAR_STATUS:
+            self.set_gear_shift(event.value)
         elif event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:
             self.record_gas_pedal_action(event.timestamp, event.value)
         elif event.ID == CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE:
@@ -284,6 +351,14 @@ def get_event_timing_from_interval(start_second, stop_second, load_ratio):
         if event_number > len(timing_interval) else event_number
     timing_seq = [i*1e-3 for i in sample(timing_interval, event_number)]
     return sorted(timing_seq)
+
+
+def car_set_gear(start_time, gearshift):
+    return [
+        CarEvent(desc="Set gearshift to Drive", timestamp=start_time,
+                 ID=CarEvent.CAR_EVENT_BROADCAST_GEAR_STATUS,
+                 value=gearshift)
+    ]
 
 
 def generate_constant_event(start_time=.0, stop_time=10.0, acceleration=0):
