@@ -56,6 +56,7 @@ class Vehicle:
         self.hpmsg = 0
         self.rlengine = 0
         self.driving_int = -1
+        self.speed_int = 0.0
 
         # set random seed
         seed(1)
@@ -245,7 +246,8 @@ class Vehicle:
             return CarEvent("DOS attack", timestamp=timestamp,
                             ID=randint(0, 0x10), value=random())
         elif attack.type == ATTACK_TYPE_REVERSE_GAS:
-            return None
+            return CarEvent("Accelerating", timestamp=timestamp,
+                            ID=CarEvent.CAR_EVENT_GAS_PEDAL, value=0.99)
         elif attack.type == ATTACK_TYPE_KILL_ENGINE:
             return CarEvent("Shut down engine", timestamp=timestamp,
                             ID=CarEvent.CAR_EVENT_GAS_ACC_VIA_ICE, value=1)
@@ -286,8 +288,18 @@ class Vehicle:
         # reset timer
         if event.timestamp - self.driving_int >= 1.0:
             self.driving_int = int(event.timestamp)
-            if self.status == CarStatus.DOS_DETECTED and \
-               self.hpmsg < Vehicle.invalid_msg_threshold:
+            speed_delta = self.speed - self.speed_int
+            self.speed_int = self.speed
+            if (self.status == CarStatus.NORMAL and speed_delta > 10):
+                self.status = CarStatus.REVERSE_HIGH_FUEllING
+                print("Car status changed: high reverse fuelling at",
+                      event.timestamp)
+            if (self.status == CarStatus.REVERSE_HIGH_FUEllING
+                    and speed_delta < 10):
+                # Car recovered from a high_fuelling_reverse error
+                self.status = CarStatus.NORMAL
+            elif (self.status == CarStatus.DOS_DETECTED
+                    and self.hpmsg < Vehicle.invalid_msg_threshold):
                 # Vehicle status in 'DOS attacking' could be recovered
                 self.status = CarStatus.NORMAL
             elif self.status == CarStatus.ENGINE_SHUTDOWN:

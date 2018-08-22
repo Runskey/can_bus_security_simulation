@@ -12,7 +12,16 @@ ACCE_RATIO = 0.2
 BRAK_RATIO = 0.03
 DOS_RATIO = 0.9
 
-TIME_OFFSET = time()
+# Simulation time, in unit of second
+SIMULATION_START_TIME = 0.0
+SIMULATION_DURATION = 20
+# TIME_OFFSET = time()
+TIME_OFFSET = 0.0
+
+# Simulation status control
+SIMULATION_GENERATE_CAR_DATA = True
+SIMULATION_ANALYZE_CAR_DATA = True
+SIMULATION_SHOW_ANIMATION = True
 
 ATTACK_TYPE_DDOS = 0
 ATTACK_TYPE_REVERSE_GAS = 1
@@ -23,6 +32,7 @@ class CarStatus(Enum):
     NORMAL = 0
     DOS_DETECTED = 1
     ENGINE_SHUTDOWN = 2
+    REVERSE_HIGH_FUEllING = 3
 
 
 class GearShiftStatus(Enum):
