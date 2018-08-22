@@ -1,0 +1,37 @@
+INTRODUCTION
+===================================================
+This Python package is aiming to:
+1. build a vehicle dynamic system
+2. build a Can bus sub-system in the vehicle
+3. generate and capture dbc messages on the Can bus system
+4. add configurable attack model on the Can bus system
+5. visualize vehicle status
+
+A WireShark lua script is also provided to dissect the customized
+CAN-Over-UDP protocol packages in the WireShark software.
+
+FILE STRUCTURE
+===================================================
+Following files are provided in the package:
+
+├── LICENSE
+├── README
+├── requirements.txt
+├── __init__.py
+├── attack_conf.txt
+├── can_bus_security_simulation.py
+├── canou.lua
+├── dbc_msg_conversion.py
+├── glob_def.py
+├── packet_proc.py
+├── vehicle_model.py
+└── visulization_proc.py
+
+INSTALLATION
+===================================================
+Python v3.6, as well as the 3rd packages listed in rquirements.txt, is required to be installed in the system.
+
+Copy the package folder to the destination position, and run script with following command:
+
+    python can_bus_security_simulation.py
+
