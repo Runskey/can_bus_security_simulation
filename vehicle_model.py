@@ -1,4 +1,3 @@
-
 from random import seed, random, sample, expovariate, randint
 from glob_def import CarEvent, CarStatus, GearShiftStatus
 from glob_def import CAN_DATA_RATE, CAN_FRAME_LEN
@@ -6,6 +5,7 @@ from glob_def import BUS_LOAD, ACCE_RATIO, BRAK_RATIO, DOS_RATIO
 from glob_def import ATTACK_TYPE_DDOS, ATTACK_TYPE_REVERSE_GAS, ATTACK_TYPE_KILL_ENGINE
 from dbc_msg_conversion import DbcMsgConvertor
 from math import exp
+import logging
 
 
 class Vehicle:
@@ -268,7 +268,7 @@ class Vehicle:
             if self.__is_attacked(event.timestamp):
                 attack_event = self.__try_to_generate_attack_event(event.timestamp)
                 if attack_event:
-                    # print(f"Inject an attacking packet at time {event.timestamp}")
+                    logging.debug(f"Inject an attacking packet at time {event.timestamp}")
                     rt_event_list.append(attack_event)
                     self.__drive_by_event(attack_event)
 
@@ -292,8 +292,7 @@ class Vehicle:
             self.speed_int = self.speed
             if (self.status == CarStatus.NORMAL and speed_delta > 10):
                 self.status = CarStatus.REVERSE_HIGH_FUEllING
-                print("Car status changed: high reverse fuelling at",
-                      event.timestamp)
+                logging.info(f"Car status changed: high reverse fuelling at {event.timestamp}")
             if (self.status == CarStatus.REVERSE_HIGH_FUEllING
                     and speed_delta < 10):
                 # Car recovered from a high_fuelling_reverse error
@@ -314,8 +313,7 @@ class Vehicle:
             if self.status == CarStatus.NORMAL and \
                self.hpmsg >= Vehicle.invalid_msg_threshold:
                 self.status = CarStatus.DOS_DETECTED
-                print("Car status changed: DOS attack detected at",
-                      event.timestamp)
+                logging.info(f"Car status changed: DOS attack detected at {event.timestamp}")
         elif event.ID == CarEvent.CAR_EVENT_BROADCAST_GEAR_STATUS:
             self.set_gear_shift(event.value)
         elif event.ID == CarEvent.CAR_EVENT_GAS_PEDAL:

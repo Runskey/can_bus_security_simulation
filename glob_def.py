@@ -1,8 +1,8 @@
-
-# Global variables
 from enum import Enum
 from time import time
+import logging
 
+# Global variables
 CAN_VERSION = '2.0B'
 CAN_DATA_RATE = 1e6  # CAN bus 2.0B data rate = 1Mbps
 CAN_FRAME_LEN = 128  # Exten
@@ -20,8 +20,8 @@ TIME_OFFSET = 0.0
 
 # Simulation status control
 SIMULATION_GENERATE_CAR_DATA = True
-SIMULATION_ANALYZE_CAR_DATA = True
-SIMULATION_SHOW_ANIMATION = True
+SIMULATION_ANALYZE_CAR_DATA = False
+SIMULATION_SHOW_ANIMATION = False
 
 ATTACK_TYPE_DDOS = 0
 ATTACK_TYPE_REVERSE_GAS = 1
@@ -92,3 +92,21 @@ class CarEvent:
         self.desc = desc
         self.ID = ID
         self.value = value
+
+
+def console_out(logFilename):
+    ''' Output log to file and console '''
+    # Define a Handler and set a format which output to file
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s : %(levelname)s  %(message)s',
+        datefmt='%Y-%m-%d %A %H:%M:%S',
+        filename=logFilename,
+        filemode='w')
+    # Define a Handler and set a format which output to console
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s  %(filename)s : %(levelname)s  %(message)s')
+    console.setFormatter(formatter)
+    # Create an instance
+    logging.getLogger().addHandler(console)

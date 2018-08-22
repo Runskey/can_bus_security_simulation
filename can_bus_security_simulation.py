@@ -1,6 +1,7 @@
 import sys
 import struct
 import configparser
+import logging
 
 from vehicle_model import Vehicle
 from vehicle_model import generate_constant_event, generate_sporadic_event
@@ -109,16 +110,16 @@ def read_attack_config():
 def main():
 
     attack_list = read_attack_config()
-    print(f"There are {len(attack_list)} attacks established:")
+    logging.info(f"There are {len(attack_list)} attacks established:")
     for attack in attack_list:
-        print("    ", attack)
+        logging.info(attack)
 
     for attack_model in attack_list:
-        print(f"------ New simulation start ------")
+        logging.info(f"------ New simulation start ------")
 
         car = Vehicle("Toyota_prius", speed=0.0)
         # car = Vehicle("Toyota_prius", speed=80.0)
-        print(f"New car set up ...")
+        logging.info(f"New car set up ...")
 
         # Register attack model from configuration file
         car.register_attack_model(attack_model)
@@ -205,9 +206,9 @@ def main():
             speed_record = [[i.timestamp, i.value] for i in event_out
                             if i.ID == CarEvent.CAR_EVENT_QUERY_SPEED]
             rpm_record = [[i.timestamp, i.value] for i in event_out
-                        if i.ID == CarEvent.CAR_EVENT_QUERY_RPM]
+                          if i.ID == CarEvent.CAR_EVENT_QUERY_RPM]
             torque_record = [[i.timestamp, i.value] for i in event_out
-                            if i.ID == CarEvent.CAR_EVENT_QUERY_TORQUE]
+                             if i.ID == CarEvent.CAR_EVENT_QUERY_TORQUE]
 
             visual_setup()
             draw_timed_sequence(speed_record, "Retrived speed [kmph])", (-10, 180))
@@ -227,4 +228,6 @@ def main():
 
 
 if __name__ == '__main__':
+    console_out("logger.log")
+
     main()
